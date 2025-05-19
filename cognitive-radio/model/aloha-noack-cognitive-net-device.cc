@@ -6,7 +6,7 @@
  *
  * Author: Nicola Baldo <nbaldo@cttc.es>
  */
-
+#include <iostream>
 #include "aloha-noack-cognitive-net-device.h"
 #include "ns3/aloha-noack-mac-header.h"
 

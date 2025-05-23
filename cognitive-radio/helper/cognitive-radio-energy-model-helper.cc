@@ -52,14 +52,14 @@ CognitiveRadioEnergyModelHelper::DoInstall(Ptr<NetDevice> device, Ptr<energy::En
 
     // set energy depletion callback
     // if none is specified, make a callback to WifiPhy::SetOffMode
-    Ptr<AlohaNoackCognitiveNetDevice> alohaDevice = DynamicCast<AlohaNoackCognitiveNetDevice>(device);
-    Ptr<CognitiveRadioPhy> alohaPhy = DynamicCast<CognitiveRadioPhy>(alohaDevice->GetPhy());
-    alohaPhy->SetCognitiveRadioEnergyModel(model);
-    alohaPhy->SetGenericPhyEnergyTxStartCallback(MakeCallback(&CognitiveRadioEnergyModel::ChangeStateToTx,model));
-    alohaPhy->SetGenericPhyEnergyTxEndCallback(MakeCallback(&CognitiveRadioEnergyModel::ChangeStateToIdle,model));
-    alohaPhy->SetGenericPhyEnergyRxEndOkCallback(MakeCallback(&CognitiveRadioEnergyModel::ChangeStateToIdle,model));
-    alohaPhy->SetGenericPhyEnergyRxEndErrorCallback(MakeCallback(&CognitiveRadioEnergyModel::ChangeStateToIdle,model));
-    alohaPhy->SetGenericPhyEnergyRxStartCallback(MakeCallback(&CognitiveRadioEnergyModel::ChangeStateToRx,model));
+    Ptr<AlohaNoackCognitiveNetDevice> cognitiveDevice = DynamicCast<AlohaNoackCognitiveNetDevice>(device);
+    Ptr<CognitiveRadioPhy> cognitivePhy = DynamicCast<CognitiveRadioPhy>(cognitiveDevice->GetPhy());
+    cognitivePhy->SetCognitiveRadioEnergyModel(model);
+    cognitivePhy->SetGenericPhyEnergyTxStartCallback(MakeCallback(&CognitiveRadioEnergyModel::ChangeStateToTx,model));
+    cognitivePhy->SetGenericPhyEnergyTxEndCallback(MakeCallback(&CognitiveRadioEnergyModel::ChangeStateToIdle,model));
+    cognitivePhy->SetGenericPhyEnergyRxEndOkCallback(MakeCallback(&CognitiveRadioEnergyModel::ChangeStateToIdle,model));
+    cognitivePhy->SetGenericPhyEnergyRxEndErrorCallback(MakeCallback(&CognitiveRadioEnergyModel::ChangeStateToIdle,model));
+    cognitivePhy->SetGenericPhyEnergyRxStartCallback(MakeCallback(&CognitiveRadioEnergyModel::ChangeStateToRx,model));
 
     // add model to device model list in energy source
     source->AppendDeviceEnergyModel(model);

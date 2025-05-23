@@ -122,6 +122,7 @@ AlohaNoackCognitiveNetDevice::~AlohaNoackCognitiveNetDevice()
     NS_LOG_FUNCTION(this);
     m_queue = nullptr;
 }
+
 void
 
 AlohaNoackCognitiveNetDevice::DoDispose()

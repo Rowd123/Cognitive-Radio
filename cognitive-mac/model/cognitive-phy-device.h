@@ -45,7 +45,8 @@
      {
          IDLE, //!< Idle state
          TX,   //!< Transmitting state
-         RX    //!< Receiving state
+         RX,   //!< Receiving state
+         SENS  //!< sensing the meduim
      };
   
      /**
@@ -84,8 +85,6 @@
       */
      void SetNoisePowerSpectralDensity(Ptr<const SpectrumValue> noisePsd);
 
-     void SetLocalSpectrum(Ptr<SpectrumValue> local);
-
      Ptr<const SpectrumValue> GetLocalSpectrum();
   
      /**
@@ -112,6 +111,20 @@
       * @return the PHY rate used by this PHY.
       */
      DataRate GetRate() const;
+
+     /**
+      * set the local model for a single 
+      * channel 
+      * @param loacalModel the model
+      */
+     void SetLocalSpectrumModel(Ptr<SpectrumModel> localModel);
+
+     /**
+      * get the spectrum local model
+      * for a single channel
+      * @return the model
+      */
+     Ptr<SpectrumModel> GetLocalSpectrumModel();
   
      /**
       * Set the callback for the end of a TX, as part of the
@@ -203,8 +216,28 @@
       * carrier sensing to know if the spectrum is busy
       * @return double the value of the power on the spectrum
       */
-     double CarrierSense();
+     double CarrierSense(uint16_t index);
 
+     /**
+      * @brief setting the channel index
+      */
+     void SetChannelIndex(uint16_t Index); 
+
+     /**
+      * @brief set the channel information
+      * the number of channels and the number
+      * of bins for each channel and the channel 
+      * Index
+      * @param numOfChannels
+      * @param numBins
+      * @param 
+      */
+     void SetChannelsInfo(uint16_t numOfChannel,uint16_t numBins , uint16_t Index);
+
+     /**
+      * @brief starting the sensing procedure
+      */
+     void StartSensing();
   
    private:
      void DoDispose() override; 
@@ -239,6 +272,7 @@
      Ptr<Packet> m_txPacket;           //!< Tx packet
      Ptr<Packet> m_rxPacket;           //!< Rx packet
      Ptr<CognitiveRadioEnergyModel> m_energyModel; // the energy model of this Phy
+     Ptr<SpectrumModel> m_localModel; //!< local model for a single channel
 
      DataRate m_rate; //!< Datarate
      State m_state;   //!< PHY state
@@ -262,6 +296,9 @@
      GenericEnergyNotification m_phyEnergyRxEndCallback;      //!< Callback - Rx end for energy model
 
 
+     uint16_t m_channelIndex;                                 //!< the index of working channel
+     uint16_t m_numBins;                                        //!< the number of bins in each channel
+     uint16_t m_numOfChannels;                                  //!< the number of channels
 
      CognitiveSpectrumInterference m_interference; //!< Received interference
 

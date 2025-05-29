@@ -115,4 +115,25 @@ MacDcfFrame::GetKind()
     return m_kind;
 }
 
+Time
+
+MacDcfFrame::CalculateLatency()
+{
+    return m_arrivalTime - m_creationTime; 
+}
+
+void
+
+MacDcfFrame::SetCreationTime(const Time time)
+{
+    m_creationTime = time;   
+}
+
+void 
+
+MacDcfFrame::SetArrivalTime(const Time time)
+{
+    m_arrivalTime = time;
+}
+
 }

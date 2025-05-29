@@ -16,6 +16,8 @@ build_lib(
                  model/mac-frames.cc
                  model/cognitive-phy-device.cc
                  model/cognitive-general-net-device.cc
+                 model/cognitive-control-application.cc
+                 model/spectrum-control-module.cc
                  helper/cognitive-device-energy-model-helper.cc
                  helper/cognitive-net-device-helper.cc
                  helper/cognitive-mac-helper.cc
@@ -24,6 +26,8 @@ build_lib(
                  model/cognitive-general-net-device.h
                  model/cognitive-phy-device.h
                  model/cognitive-mac-constants.h
+                 model/cognitive-control-application.h
+                 model/spectrum-control-module.h
                  helper/cognitive-net-device-helper.h
                  helper/cognitive-device-energy-model-helper.h
                  helper/cognitive-mac-helper.h

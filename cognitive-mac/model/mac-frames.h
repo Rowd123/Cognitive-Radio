@@ -87,17 +87,41 @@ class MacDcfFrame : public Object
        */
       Time GetDuration();
 
+      /**
+       * Get the kind of the frame RTS, CTS, DATA, ACK
+       * @return enum the frame type
+       */
       FrameType GetKind() ;
+
+      /**
+       * Getting the latency of the packet
+       * @return time latency
+       */
+      Time CalculateLatency();
+
+      /**
+       * Set the creation time of the packet
+       * @param time the time of the creation 
+       */
+      void SetCreationTime(const Time  time);
+
+      /**
+       * Set the final destination arrival time of the packet
+       * @param time the time of the creation 
+       */
+      void SetArrivalTime(const Time  time);
 
 
       protected:
       void DoDispose() override;
       
       private:
-      Ptr<Packet>  m_packet;  //!< the packet of the data frame
+      Ptr<Packet>  m_packet;       //!< the packet of the data frame
       Mac48Address m_TxAddress;    //!< the address of the sender
       Mac48Address m_RxAddress;    //!< the address of the receiever
-      Time     m_duration;    //!< the duration of the transmission
+      Time     m_duration;         //!< the duration of the transmission
+      Time     m_creationTime ;    //!< the creation time of the packet
+      Time     m_arrivalTime;      //!< the time for finishing reception
       FrameType    m_kind;         //!< the kind of the frame
 
 };

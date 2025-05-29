@@ -12,6 +12,7 @@
 #include <ns3/net-device-container.h>
 #include <ns3/node-container.h>
 #include <ns3/object-factory.h>
+#include <ns3/spectrum-model.h>
 #include <ns3/queue.h>
 #include <string>
 
@@ -34,24 +35,37 @@ class CognitiveNetDeviceHelper
 
     /**
      * set the SpectrumChannel that will be used by SpectrumPhy instances created by this helper
-     *
+     * 
      * @param channel
      */
     void SetChannel(Ptr<SpectrumChannel> channel);
 
     /**
      * set the SpectrumChannel that will be used by SpectrumPhy instances created by this helper
-     *
+     * 
      * @param channelName
      */
     void SetChannel(std::string channelName);
 
     /**
      *
-     * @param txPsd the Power Spectral Density to be used for transmission by all created PHY
+     * @param dataTxPsd the Power Spectral Density to be used for transmission by all created PHY
      * instances
      */
-    void SetTxPowerSpectralDensity(Ptr<SpectrumValue> txPsd);
+    void SetDataTxPowerSpectralDensity(Ptr<SpectrumValue> dataTxPsd);
+
+    /**
+     *
+     * @param ctrlTxPsd the Power Spectral Density to be used for transmission by all created PHY
+     * instances
+     */
+    void SetCtrlTxPowerSpectralDensity(Ptr<SpectrumValue> ctrlTxPsd);
+
+    /**
+     * 
+     * @param localmodel the Spectrum Model for a single channel
+     */
+    void SetLocalSpectrumModel(Ptr<SpectrumModel> localModel);
 
     /**
      *
@@ -75,6 +89,31 @@ class CognitiveNetDeviceHelper
      * Set these attributes on each AlohaNoackNetDevice created
      */
     void SetDeviceAttribute(std::string n1, const AttributeValue& v1);
+
+    
+    /**
+     * @param time the stopping time 
+     */
+    void SetStopTime(Time time);
+
+    /**
+     * @param time the starting time
+     */
+    void SetStartTime(Time time);
+
+    /**
+     * @param bgCount the number of band groups
+     * @param bgSize the number of channels in each group
+     * @param numOfChannels the number of channels
+     * @param numBins the number of bins in each channel 
+     */
+    void SetChannelsInfo(uint16_t bgCount , uint16_t bgSize , uint16_t numOfChannels,uint16_t numBins);
+
+    /**
+     * @param threshold the comparison threshold
+     */
+    void SetThreshold(double threshold);
+
     
     /**
      * \tparam Ts \deduced Argument types
@@ -102,13 +141,25 @@ class CognitiveNetDeviceHelper
      */
     NetDeviceContainer Install(std::string nodeName) const;
 
+
   protected:
-    ObjectFactory m_phy;            //!< Object factory for the phy objects
-    ObjectFactory m_device;         //!< Object factory for the NetDevice objects
-    ObjectFactory m_antenna;        //!< Object factory for the Antenna objects
-    Ptr<SpectrumChannel> m_channel; //!< Channel
-    Ptr<SpectrumValue> m_txPsd;     //!< Tx power spectral density
-    Ptr<SpectrumValue> m_noisePsd;  //!< Noise power spectral density 
+    ObjectFactory m_phy;                //!< Object factory for the phy objects
+    ObjectFactory m_device;             //!< Object factory for the NetDevice objects
+    ObjectFactory m_antenna;            //!< Object factory for the Antenna objects
+    ObjectFactory m_controlApp;         //!< Object factory for the control net device
+    ObjectFactory m_spectrumCtrl;       //!< Object factory for the spectrum control module 
+    Ptr<SpectrumChannel> m_channel;     //!< data Channel
+    Ptr<SpectrumValue> m_dataTxPsd;     //!< Tx power spectral density for data device
+    Ptr<SpectrumValue> m_ctrlTxPsd;     //!< Tx power spectral density for control device
+    Ptr<SpectrumValue> m_noisePsd;      //!< Noise power spectral density for the data device
+    Ptr<SpectrumModel> m_localModel;    //!< the local spectrum model for a single channel 
+    Time m_stopTime;                    //!< the stopping time of the control application
+    Time m_startTime;                   //!< the starting time of the control application
+    uint16_t m_bgCount;                 //!< the number of large bandgroups 
+    uint16_t m_bgSize;                  //!< the size of each large band group
+    uint16_t m_numOfChannels;           //!< the total number of channels
+    uint16_t m_numBins;                 //!< the number of bins in each channel
+    double m_threshold;                 //!< the threshold used for deciding the channel status
 };
 
 /***************************************************************

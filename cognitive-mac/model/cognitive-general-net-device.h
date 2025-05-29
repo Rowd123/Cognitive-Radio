@@ -43,7 +43,8 @@ class SpectrumErrorModel;
  */
 
 typedef Callback<bool,Ptr<Packet>> PhyTxStartCallback;
-typedef Callback<double> SensingResultCallback;
+typedef Callback<double,uint16_t> SensingResultCallback;
+typedef Callback<void> StopWorkCallback;
     class CognitiveGeneralNetDevice : public NetDevice
     {
         public:
@@ -126,6 +127,13 @@ typedef Callback<double> SensingResultCallback;
         void SetCcaResultCallback(SensingResultCallback c);
 
         /**
+         * set the callback for stopping the work of the phy
+         * device durint sensing period
+         * @param c
+         */
+        void SetStopWorkCallback(StopWorkCallback c);
+
+        /**
          * @brief Set the Phy object which is attached to this device.
          * This object is needed so that we can set/get attributes and
          * connect to trace sources of the PHY from the net device.
@@ -137,20 +145,18 @@ typedef Callback<double> SensingResultCallback;
          * @return a reference to the PHY object embedded in this NetDevice.
         */
         Ptr<Object> GetPhy() const;
-         /**
-          * @brief sensing the spectrum during DIFS
-          * @return the result of DIFS Sensing 
-          */
          
-          void DIFSPhase();
+        /**
+         * @brief sensing the spectrum during DIFS
+         * @return the result of DIFS Sensing 
+         */
          
-
-
+        void DIFSPhase();
+         
          /**
           * @brief the result of DIFSPhase
           */
          void DIFSDecision();
-        /** inherited from NetDevice */
 
         /**
          * @brief the sending the rts 
@@ -201,10 +207,50 @@ typedef Callback<double> SensingResultCallback;
          */
         void ReceiveAck();
 
-        static uint32_t numOfGenPackets();
+        /**
+         * @brief Stop the transmission
+         * and reception for the sensing
+         * phase 
+         */
+        void StopWork(Time stopTime);
 
-        static uint32_t numOfRecPackets();
+        /**
+         * @brief the total number of generated packets
+         * over all class objects
+         */
 
+        static uint32_t NumOfGenPackets();
+
+        /**
+         * @brief the total number of received packets
+         * over all class objects
+         */
+
+        static uint32_t NumOfRecPackets();
+
+
+        /**
+         * @brief the total latency sum of all packets
+         */
+        static double TotalLatency();
+
+        /**
+         * @brief the sensing order from the spectrum module
+         */
+        double SpectrumControlSense(uint16_t Index);
+
+        /**
+         * @brief Set the threshold for deciding channel 
+         * statur 
+         * @param threshold the thresold
+         */
+        void SetThreshold(double threshold);
+
+        /**
+         * @brief change the state
+         * @param s 
+         */
+        void ChangeState(CognitiveState s);
 
         void SetIfIndex(const uint32_t index) override;
         uint32_t GetIfIndex() const override;
@@ -254,6 +300,7 @@ typedef Callback<double> SensingResultCallback;
         NetDevice::PromiscReceiveCallback m_promiscRxCallback;            //!< Promiscuous Rx callback
         PhyTxStartCallback m_phyTxStartCallback;      //!< the TX start Callback
         SensingResultCallback m_sensingResult;        //!< the sensing result 
+        StopWorkCallback m_stopWork;                 //!< stop work of the phy     
         TracedCallback<> m_linkChangeCallbacks;       //!< the link change Callback;
         uint32_t m_ifIndex;            // !< the interface Index
         mutable uint32_t m_mtu;        // !< NetDevice MTU
@@ -264,7 +311,7 @@ typedef Callback<double> SensingResultCallback;
         Ptr<Object> m_phy;             // !< the physical layer object
         Ptr<UniformRandomVariable> m_rv ;   // random variable for the backoff process
         uint16_t m_CW;              //!< the contention window size
-        inline static double m_threshold = 1.2e-8;            //!< threshold for the carrier sense 
+        double m_threshold;            //!< threshold for the carrier sense 
         DataRate m_rate;               //!< phy date rate
         uint32_t m_backOffSlots;       //!< number of back off slots
         inline static std::map<uint32_t,Ptr<MacDcfFrame>> m_map;  //!< the map for the packets sent
@@ -274,7 +321,8 @@ typedef Callback<double> SensingResultCallback;
         inline static uint32_t genPackets = 0;
         inline static uint32_t recPackets = 0;
         EventId m_sendPhase ;              //!< time to retry the transmission
-        EventId m_nav ;                //!< virtual carrier sense timer
+        EventId m_nav ;                //!< virtual carrier sense timers
+        inline static double latency = 0.0; //!< the total latency over all packets
         
     };
 

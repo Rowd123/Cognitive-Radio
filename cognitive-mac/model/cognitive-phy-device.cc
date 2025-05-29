@@ -35,7 +35,8 @@
        m_netDevice(nullptr),
        m_channel(nullptr),
        m_txPsd(nullptr),
-       m_state(IDLE)
+       m_state(IDLE),
+       m_channelIndex(0)
  {
      m_interference.SetErrorModel(CreateObject<ShannonSpectrumErrorModel>());
  }
@@ -55,6 +56,7 @@
      m_rxPsd = nullptr;
      m_txPacket = nullptr;
      m_rxPacket = nullptr;
+     m_localModel = nullptr;
      m_phyMacTxEndCallback = MakeNullCallback<void, Ptr<const Packet>>();
      m_phyMacRxStartCallback = MakeNullCallback<void>();
      m_phyMacRxEndErrorCallback = MakeNullCallback<void>();
@@ -209,6 +211,21 @@
      NS_LOG_FUNCTION(this);
      return m_rate;
  }
+
+ void
+ CognitivePhyDevice::SetLocalSpectrumModel(Ptr<SpectrumModel> localModel)
+ {
+    NS_LOG_FUNCTION(this);
+    m_localModel = localModel;
+ }
+
+ Ptr<SpectrumModel>
+ CognitivePhyDevice::GetLocalSpectrumModel()
+ {
+    NS_LOG_FUNCTION(this);
+    return m_localModel;
+ }
+
   
  void
  CognitivePhyDevice::SetGenericPhyTxEndCallback(GenericPhyTxEndCallback c)
@@ -270,6 +287,8 @@
      switch (m_state)
      {
      case RX:
+        break;
+     case SENS:
         break;
      case IDLE: {
          if(!m_phyEnergyTxStartCallback.IsNull())
@@ -341,10 +360,10 @@
     }
     if(!m_phyEnergyTxEndCallback.IsNull())
     {
-        m_phyEnergyTxStartCallback();
+        m_phyEnergyTxEndCallback();
     }
     m_process.Cancel();
-    m_state = IDLE ;
+    ChangeState(IDLE);
  }
   
  void
@@ -355,8 +374,21 @@
      NS_LOG_LOGIC(this << " rx power: " << 10 * std::log10(Integral(*(spectrumParams->psd))) + 30
                        << " dBm");
      // interference will happen regardless of the state of the receiver
+     Ptr<SpectrumValue> temp = Create<SpectrumValue>(m_localModel);
+     for(uint16_t i = 0 ; i < m_numBins ; i++)
+     {
+        (*temp)[i] = (*spectrumParams->psd)[i+m_channelIndex*m_numBins];
+     }
+     if(Integral(*temp)==0.0)
+     {
+        return;
+     }
+    // std::cout << CarrierSense(1000) << std::endl;
+
      m_interference.AddSignal(spectrumParams->psd, spectrumParams->duration);
-  
+     
+    // std::cout << CarrierSense(1000) << std::endl;
+
      // the device might start RX only if the signal is of a type understood by this device
      // this corresponds in real devices to preamble detection
      Ptr<HalfDuplexIdealPhySignalParameters> rxParams =
@@ -422,9 +454,9 @@
  void
  CognitivePhyDevice::EndRx()
  {
+ //   std::cout << m_netDevice->GetNode()->GetId() <<" Rx has ended " << Simulator::Now() << std::endl;
      NS_LOG_FUNCTION(this);
      NS_LOG_LOGIC(this << " state: " << m_state);
-  
      NS_ASSERT(m_state == RX);
      bool rxOk = m_interference.EndRx();
     if(!m_phyEnergyRxEndCallback.IsNull())
@@ -470,12 +502,39 @@
     return m_txPsd;
  }
 
- double
- CognitivePhyDevice::CarrierSense()
+ void
+ CognitivePhyDevice::SetChannelsInfo(uint16_t numOfChannels , uint16_t numBins , uint16_t Index)
  {
+    m_numOfChannels = numOfChannels;
+    m_numBins = numBins;
+    m_channelIndex = Index; 
+ }
+
+ double
+ CognitivePhyDevice::CarrierSense(uint16_t Index)
+ {
+    if(Index==1000){Index = m_channelIndex;}
+  //  std::cout << Index << std::endl;
     Ptr<const SpectrumValue> spec = m_interference.GetSpectrum();
-    double cur = Integral(*spec); 
-    return cur;
+    Ptr<SpectrumValue> model = Create<SpectrumValue>(m_localModel);
+    for(uint16_t i = 0 ; i < m_numBins ; i++)
+    {
+        (*model)[i]= (*spec)[i+Index*m_numBins];
+    } 
+    return Integral(*model);
+ }
+
+ void
+ CognitivePhyDevice::SetChannelIndex(uint16_t Index)
+ {
+    if(Index!=m_channelIndex)
+    {
+        for(uint16_t i = 0 ; i < m_numBins ; i++)
+        {
+            std::swap((*m_txPsd)[i+Index*m_numBins],(*m_txPsd)[i+m_channelIndex*m_numBins]);
+        }
+        m_channelIndex = Index; 
+    }
  }
  
  void 
@@ -506,6 +565,16 @@
  CognitivePhyDevice::SetCognitiveDeviceEnergyModel(Ptr<CognitiveRadioEnergyModel> model)
  {
     m_energyModel = model ;
+ }
+
+ void
+ CognitivePhyDevice::StartSensing()
+ {
+   // std::cout << m_netDevice->GetNode()->GetId() << " going to start sensing "<< m_state <<" " << Simulator::Now() << std::endl;
+    if(m_state==TX)
+    {
+        AbortTx();
+    }
  }
 
  } // namespace ns3

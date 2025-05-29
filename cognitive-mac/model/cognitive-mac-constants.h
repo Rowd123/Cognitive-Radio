@@ -9,8 +9,8 @@
 
  #include <ns3/packet.h>
  #include <ns3/nstime.h>
-
-
+ #include <ns3/mac48-address.h>
+ #include <ns3/address.h>
  #include <iostream>
  namespace ns3
  {
@@ -25,7 +25,11 @@
     const uint32_t RTSsize = 44;                //!< the size of the rts packet in bytes
     const uint32_t CTSsize = 38;                //!< the size of the cts packet in bytes
     const uint32_t ACKsize = 38;                //!< the size of the ack packet in bytes
-                
+    const Address Broadcast = (Mac48Address::GetBroadcast()).ConvertTo();     //!< broadcast address
+    const uint32_t NCCIsize = 500 ;             //!< the size of the NCCI message
+    const uint32_t CH_ANMsize = 50 ;            //!< the size of CH_ANM message
+    const uint32_t JOIN_REQsize = 50 ;          //!< the size of JOIN_REQ message
+    const uint32_t GH_ANMsize = 50 ;            //!< the size of the GH_ANM message 
     /**
      * the state of the net device
      */
@@ -34,7 +38,7 @@
       IDLE,       //!< Idle state
       TX,         //!< Transmitting State
       RX,         //!< Receiving State
-      CCA_BUSY    //!< Busy Channel
+      SENSING     //!< sensing the channel
    };
    enum FrameType
    {

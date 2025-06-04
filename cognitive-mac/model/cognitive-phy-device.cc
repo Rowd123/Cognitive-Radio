@@ -283,7 +283,6 @@
      NS_LOG_FUNCTION(this << p);
      NS_LOG_LOGIC(this << "state: " << m_state);
      m_phyTxStartTrace(p);
-
      switch (m_state)
      {
      case RX:
@@ -353,7 +352,7 @@
  CognitivePhyDevice::AbortTx()
  {
     NS_ASSERT(m_state==TX);
-    
+    //std::cout << m_netDevice->GetNode()->GetId() << " aborting Tx " << std::endl;
     if(!m_phyMacTxAbortCallback.IsNull())
     {
         m_phyMacTxAbortCallback(m_txPacket);
@@ -375,12 +374,13 @@
                        << " dBm");
      // interference will happen regardless of the state of the receiver
      Ptr<SpectrumValue> temp = Create<SpectrumValue>(m_localModel);
+    
      for(uint16_t i = 0 ; i < m_numBins ; i++)
      {
         (*temp)[i] = (*spectrumParams->psd)[i+m_channelIndex*m_numBins];
      }
      if(Integral(*temp)==0.0)
-     {
+     { 
         return;
      }
     // std::cout << CarrierSense(1000) << std::endl;
@@ -564,6 +564,7 @@
  void
  CognitivePhyDevice::SetCognitiveDeviceEnergyModel(Ptr<CognitiveRadioEnergyModel> model)
  {
+    NS_ASSERT(model);
     m_energyModel = model ;
  }
 
@@ -575,6 +576,13 @@
     {
         AbortTx();
     }
+ }
+
+ double
+ CognitivePhyDevice::GetRemainingEnergy()
+ {
+    NS_ASSERT_MSG(m_energyModel,"the energy model isn't set");
+    return m_energyModel->GetRemainingEnergy();
  }
 
  } // namespace ns3

@@ -8,8 +8,8 @@
  #ifndef COGNITIVE_PHY_DEVICE
  #define COGNITIVE_PHY_DEVICE
 
- #include "ns3/cognitive-radio-energy-model.h"
- #include "ns3/cognitive-spectrum-interference.h"
+ #include "cognitive-radio-energy-model.h"
+ #include "cognitive-spectrum-interference.h"
  #include "ns3/spectrum-channel.h"
  #include "ns3/spectrum-interference.h"
  #include "ns3/spectrum-phy.h"
@@ -238,6 +238,12 @@
       * @brief starting the sensing procedure
       */
      void StartSensing();
+
+     /**
+      * @brief get the remaining energy
+      * @return the energy
+      */
+     double GetRemainingEnergy();
   
    private:
      void DoDispose() override; 

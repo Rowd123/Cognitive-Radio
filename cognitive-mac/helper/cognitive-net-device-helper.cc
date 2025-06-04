@@ -164,11 +164,14 @@ CognitiveNetDeviceHelper::Install(NodeContainer c) const
         datadev->SetQueue(q);
         controldev->SetQueue(f);   
 
+        ctrlApp->SetAddress(datadev->GetAddress());
         ctrlSpect->SetChannels(m_bgSize,m_bgCount);
         ctrlSpect->SetThreshold(m_threshold);
         ctrlApp->SetSpectrumControlModule(ctrlSpect);
         ctrlApp->SetDataDevice(datadev);
         ctrlApp->SetControlDevice(controldev);
+
+        datadev->SetDeviceKind(true);
 
         ctrlSpect->SetSenseResultCallback(
             MakeCallback(&CognitiveControlApplication::SelectedChannelResult,ctrlApp));
@@ -178,6 +181,12 @@ CognitiveNetDeviceHelper::Install(NodeContainer c) const
             MakeCallback(&CognitiveGeneralNetDevice::SpectrumControlSense,datadev));
         ctrlApp->SetStartSensingPeriodCallback(
             MakeCallback(&CognitiveGeneralNetDevice::StopWork,datadev));
+        ctrlApp->SetGetRemainingEnergyCallback(
+            MakeCallback(&CognitiveGeneralNetDevice::GetReamainingEnergy,datadev));
+        ctrlApp->SetSetCommonDataChannelsCallback(
+            MakeCallback(&CognitiveGeneralNetDevice::SetClusterInfo,datadev));
+        controldev->SetReceiveCtrlPacketCallback(
+            MakeCallback(&CognitiveControlApplication::ReceiveControlMsg,ctrlApp));
             
         // note that we could have used a SpectrumPhyHelper here, but
         // given that it is straightforward to handle the configuration
@@ -188,6 +197,9 @@ CognitiveNetDeviceHelper::Install(NodeContainer c) const
         Ptr<CognitivePhyDevice> controlphy = (m_phy.Create())->GetObject<CognitivePhyDevice>();
         NS_ASSERT(dataphy);
         NS_ASSERT(controldev);
+
+        datadev->SetGetRemainingEnergyCallback(
+            MakeCallback(&CognitivePhyDevice::GetRemainingEnergy,dataphy));
 
         datadev->SetPhy(dataphy);
         controldev->SetPhy(controldev);
@@ -207,7 +219,9 @@ CognitiveNetDeviceHelper::Install(NodeContainer c) const
         NS_ASSERT_MSG(
             m_dataTxPsd,
             "you forgot to call CognitivePhyDeviceHelper::SetDataTxPowerSpectralDensity ()");
-        dataphy->SetTxPowerSpectralDensity(m_dataTxPsd);
+        Ptr<SpectrumValue> datatxPsd = m_dataTxPsd->Copy();
+        
+        dataphy->SetTxPowerSpectralDensity(datatxPsd);
 
         NS_ASSERT_MSG(
             m_ctrlTxPsd,
@@ -257,10 +271,11 @@ CognitiveNetDeviceHelper::Install(NodeContainer c) const
         datadev->SetPhyStartTxCallback(MakeCallback(&CognitivePhyDevice::StartTx, dataphy));
         datadev->SetCcaResultCallback(MakeCallback(&CognitivePhyDevice::CarrierSense,dataphy));
         datadev->SetStopWorkCallback(MakeCallback(&CognitivePhyDevice::StartSensing,dataphy));
-        
+        datadev->SetCurrentDataChannelCallback(MakeCallback(&CognitivePhyDevice::SetChannelIndex,dataphy));
         
         controldev->SetPhyStartTxCallback(MakeCallback(&CognitivePhyDevice::StartTx, controlphy));
         controldev->SetCcaResultCallback(MakeCallback(&CognitivePhyDevice::CarrierSense,controlphy));
+        controldev->TransmissionPermission(true);
         
         Ptr<AntennaModel> dataAntenna = (m_antenna.Create())->GetObject<AntennaModel>();
         Ptr<AntennaModel> ctrlAntenna = (m_antenna.Create())->GetObject<AntennaModel>();

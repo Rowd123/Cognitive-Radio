@@ -100,6 +100,12 @@ class MacDcfFrame : public Object
       Time CalculateLatency();
 
       /**
+       * Ge the uid of the original packet
+       * @return uid of the packet
+       */
+      uint32_t GetOriginalPacketUid();
+
+      /**
        * Set the creation time of the packet
        * @param time the time of the creation 
        */
@@ -110,6 +116,12 @@ class MacDcfFrame : public Object
        * @param time the time of the creation 
        */
       void SetArrivalTime(const Time  time);
+
+      /**
+       * set the uid of the main packet 
+       * @param uid 
+       */
+      void SetOriginalPacketUid(uint32_t uid);
 
 
       protected:
@@ -123,6 +135,7 @@ class MacDcfFrame : public Object
       Time     m_creationTime ;    //!< the creation time of the packet
       Time     m_arrivalTime;      //!< the time for finishing reception
       FrameType    m_kind;         //!< the kind of the frame
+      uint32_t m_originalPkt;      //!< the origial packet uid
 
 };
 

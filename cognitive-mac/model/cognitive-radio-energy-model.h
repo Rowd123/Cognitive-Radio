@@ -47,6 +47,12 @@ class CognitiveRadioEnergyModel : public energy::DeviceEnergyModel
     void SetEnergySource(const Ptr<energy::EnergySource> source) override;
 
     /**
+     * \brief Get the current energy
+     * \return the energy
+     */
+    double GetRemainingEnergy();
+
+    /**
      * \returns Total energy consumption of the wifi device.
      *
      * Implements DeviceEnergyModel::GetTotalEnergyConsumption.

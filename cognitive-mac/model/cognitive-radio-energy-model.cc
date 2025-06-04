@@ -60,6 +60,13 @@ CognitiveRadioEnergyModel::~CognitiveRadioEnergyModel()
     NS_LOG_FUNCTION(this);
 }
 
+double
+
+CognitiveRadioEnergyModel::GetRemainingEnergy()
+{
+    return m_source->GetRemainingEnergy();
+}
+
 void
 
 CognitiveRadioEnergyModel::SetEnergySource(const Ptr<energy::EnergySource> source)

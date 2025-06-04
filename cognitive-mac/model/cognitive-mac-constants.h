@@ -28,6 +28,7 @@
     const Address Broadcast = (Mac48Address::GetBroadcast()).ConvertTo();     //!< broadcast address
     const uint32_t NCCIsize = 500 ;             //!< the size of the NCCI message
     const uint32_t CH_ANMsize = 50 ;            //!< the size of CH_ANM message
+    const uint32_t CH_REQsize = 50 ;            //!< the size of the CH_REQ message
     const uint32_t JOIN_REQsize = 50 ;          //!< the size of JOIN_REQ message
     const uint32_t GH_ANMsize = 50 ;            //!< the size of the GH_ANM message 
     /**

@@ -45,6 +45,10 @@ class SpectrumErrorModel;
 typedef Callback<bool,Ptr<Packet>> PhyTxStartCallback;
 typedef Callback<double,uint16_t> SensingResultCallback;
 typedef Callback<void> StopWorkCallback;
+typedef Callback<double> GetRemainingEnergyCallback;
+typedef Callback<void,Ptr<Packet>> ReceiveCtrlPacketCallback;
+typedef Callback<void,uint16_t> CurrentDataChannelCallback;
+
     class CognitiveGeneralNetDevice : public NetDevice
     {
         public:
@@ -128,10 +132,30 @@ typedef Callback<void> StopWorkCallback;
 
         /**
          * set the callback for stopping the work of the phy
-         * device durint sensing period
+         * device during sensing period
          * @param c
          */
         void SetStopWorkCallback(StopWorkCallback c);
+
+        /**
+         * @brief Set the callback for getting the energy
+         * @param c the callback
+         */
+        void SetGetRemainingEnergyCallback(GetRemainingEnergyCallback c);
+
+        /**
+         * @brief Set the reception of 
+         * a ctrl callback 
+         * @param c the callback
+         */
+        void SetReceiveCtrlPacketCallback(ReceiveCtrlPacketCallback c);
+
+        /**
+         * @brief Set the current data
+         * channel callback
+         * @param c the callback
+         */
+        void SetCurrentDataChannelCallback(CurrentDataChannelCallback c);
 
         /**
          * @brief Set the Phy object which is attached to this device.
@@ -252,6 +276,38 @@ typedef Callback<void> StopWorkCallback;
          */
         void ChangeState(CognitiveState s);
 
+        /**
+         * @brief Get the remaining energy
+         * @return the energy
+         */
+        double GetReamainingEnergy();
+
+        /**
+         * @brief Get the cluster info
+         * to set the CADC and CBDC
+         */
+        void SetClusterInfo(uint16_t CADC , uint16_t CBDC);
+
+        /**
+         * @brief allow or forbid
+         * transmission
+         * @param b true if transmission
+         * allowed
+         */
+        void TransmissionPermission(bool b);
+
+        /**
+         * @brief Set the kind of 
+         * device to be for data
+         * or control
+         * @param b true if it's
+         * data device and false
+         *  for control
+         */
+        void SetDeviceKind(bool b);
+
+
+
         void SetIfIndex(const uint32_t index) override;
         uint32_t GetIfIndex() const override;
         Ptr<Channel> GetChannel() const override;
@@ -301,6 +357,9 @@ typedef Callback<void> StopWorkCallback;
         PhyTxStartCallback m_phyTxStartCallback;      //!< the TX start Callback
         SensingResultCallback m_sensingResult;        //!< the sensing result 
         StopWorkCallback m_stopWork;                 //!< stop work of the phy     
+        GetRemainingEnergyCallback m_remainingEnergy; //!< get the remaining energy callback 
+        ReceiveCtrlPacketCallback m_receiveCtrlPacket; //!< receive ctrl packet callback
+        CurrentDataChannelCallback m_currentDataChannel; //!< set the current data channel
         TracedCallback<> m_linkChangeCallbacks;       //!< the link change Callback;
         uint32_t m_ifIndex;            // !< the interface Index
         mutable uint32_t m_mtu;        // !< NetDevice MTU
@@ -310,14 +369,19 @@ typedef Callback<void> StopWorkCallback;
         Ptr<MacDcfFrame> m_rdata;      // !< the data packet being recerived
         Ptr<Object> m_phy;             // !< the physical layer object
         Ptr<UniformRandomVariable> m_rv ;   // random variable for the backoff process
-        uint16_t m_CW;              //!< the contention window size
+        bool m_IhaveChannel;           // !< boolean to tell that I have cluster
+        uint16_t m_CW;                  //!< the contention window size
+        uint16_t m_CADC;                //!< the common active data channel 
+        uint16_t m_CBDC;                //!< the common active data channel
         double m_threshold;            //!< threshold for the carrier sense 
         DataRate m_rate;               //!< phy date rate
         uint32_t m_backOffSlots;       //!< number of back off slots
         inline static std::map<uint32_t,Ptr<MacDcfFrame>> m_map;  //!< the map for the packets sent
+        inline static std::set<uint32_t> m_dataSet;     //!< the set containing the packets send from protocol
         double m_senseRes;          
         bool m_currentTX ;              //!< boolean to know if we have a packet to transmit now 
         bool m_backoff;                 //!< boolean to know that we are in backoff phase 
+        bool m_dataDevice;              //!< boolean to indicate if the net device is for data or control
         inline static uint32_t genPackets = 0;
         inline static uint32_t recPackets = 0;
         EventId m_sendPhase ;              //!< time to retry the transmission

@@ -122,6 +122,13 @@ MacDcfFrame::CalculateLatency()
     return m_arrivalTime - m_creationTime; 
 }
 
+uint32_t 
+
+MacDcfFrame::GetOriginalPacketUid()
+{
+    return m_originalPkt;
+}
+
 void
 
 MacDcfFrame::SetCreationTime(const Time time)
@@ -134,6 +141,13 @@ void
 MacDcfFrame::SetArrivalTime(const Time time)
 {
     m_arrivalTime = time;
+}
+
+void 
+
+MacDcfFrame::SetOriginalPacketUid(uint32_t uid)
+{
+    m_originalPkt = uid;
 }
 
 }

@@ -49,17 +49,19 @@ CognitiveDeviceEnergyModelHelper::DoInstall(Ptr<NetDevice> device, Ptr<energy::E
     Ptr<Node> node = device->GetNode();
     Ptr<CognitiveRadioEnergyModel> model = m_radioEnergy.Create()->GetObject<CognitiveRadioEnergyModel>();
     NS_ASSERT(model);
-
+    
     // set energy depletion callback
     // if none is specified, make a callback to WifiPhy::SetOffMode
     Ptr<CognitiveGeneralNetDevice> cognitiveDevice = DynamicCast<CognitiveGeneralNetDevice>(device);
     Ptr<CognitivePhyDevice> CognitivePhy = DynamicCast<CognitivePhyDevice>(cognitiveDevice->GetPhy());
+    
     CognitivePhy->SetCognitiveDeviceEnergyModel(model);
+    
     CognitivePhy->SetGenericPhyEnergyTxStartCallback(MakeCallback(&CognitiveRadioEnergyModel::ChangeStateToTx,model));
     CognitivePhy->SetGenericPhyEnergyTxEndCallback(MakeCallback(&CognitiveRadioEnergyModel::ChangeStateToIdle,model));
     CognitivePhy->SetGenericPhyEnergyRxEndCallback(MakeCallback(&CognitiveRadioEnergyModel::ChangeStateToIdle,model));
     CognitivePhy->SetGenericPhyEnergyRxStartCallback(MakeCallback(&CognitiveRadioEnergyModel::ChangeStateToRx,model));
-
+    
     // add model to device model list in energy source
     source->AppendDeviceEnergyModel(model);
     // set energy source pointer

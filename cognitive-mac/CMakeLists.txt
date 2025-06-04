@@ -18,6 +18,9 @@ build_lib(
                  model/cognitive-general-net-device.cc
                  model/cognitive-control-application.cc
                  model/spectrum-control-module.cc
+                 model/cognitive-radio-energy-model.cc
+                 model/cognitive-spectrum-interference.cc
+                 model/cognitive-control-message.cc
                  helper/cognitive-device-energy-model-helper.cc
                  helper/cognitive-net-device-helper.cc
                  helper/cognitive-mac-helper.cc
@@ -28,6 +31,9 @@ build_lib(
                  model/cognitive-mac-constants.h
                  model/cognitive-control-application.h
                  model/spectrum-control-module.h
+                 model/cognitive-radio-energy-model.h
+                 model/cognitive-spectrum-interference.h
+                 model/cognitive-control-message.h
                  helper/cognitive-net-device-helper.h
                  helper/cognitive-device-energy-model-helper.h
                  helper/cognitive-mac-helper.h

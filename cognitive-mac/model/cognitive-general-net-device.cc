@@ -104,10 +104,12 @@ CognitiveGeneralNetDevice::GetTypeId()
 
 CognitiveGeneralNetDevice::CognitiveGeneralNetDevice()
     : m_state(IDLE),
+      m_IhaveChannel(false),
       m_CW(4),
       m_threshold(0.0),
       m_currentTX(false),
-      m_backoff(false)
+      m_backoff(false),
+      m_dataDevice(false)
 {
     m_rv = CreateObject<UniformRandomVariable>();
     NS_LOG_FUNCTION(this);
@@ -337,6 +339,14 @@ CognitiveGeneralNetDevice::SetPromiscReceiveCallback(NetDevice::PromiscReceiveCa
     m_promiscRxCallback = cb;
 }
 
+void
+
+CognitiveGeneralNetDevice::SetReceiveCtrlPacketCallback(ReceiveCtrlPacketCallback c)
+{
+    NS_LOG_FUNCTION(this);
+    m_receiveCtrlPacket = c;
+}
+
 bool
 
 CognitiveGeneralNetDevice::SupportsSendFrom() const
@@ -347,14 +357,20 @@ CognitiveGeneralNetDevice::SupportsSendFrom() const
 
 void
 
+CognitiveGeneralNetDevice::SetDeviceKind(bool b)
+{
+    m_dataDevice = b ;
+}
+
+void
+
 CognitiveGeneralNetDevice::DIFSPhase()
 { 
     m_senseRes = 0.0 ;
     NS_ASSERT(!m_sensingResult.IsNull());
     double tem = m_sensingResult(1000);
     m_senseRes += tem * DIFS.GetSeconds();
-    m_sendPhase.Cancel();
-    //std::cout << m_node->GetId() << " Entering the DIFS phase " << Simulator::Now() << std::endl;
+    m_sendPhase.Cancel();   
     m_sendPhase = Simulator::Schedule(DIFS,&CognitiveGeneralNetDevice::DIFSDecision,this);
 }
 
@@ -365,11 +381,20 @@ CognitiveGeneralNetDevice::DIFSDecision()
     if(m_senseRes<=m_threshold*DIFS.GetSeconds())
     {
         m_sendPhase.Cancel();
-        m_sendPhase = Simulator::Schedule(SIFS,&CognitiveGeneralNetDevice::SendRTS,this);
-        //std::cout << m_node->GetId() <<" going to RTS" << std::endl;
+        Time addRandom = Seconds(m_rv->GetValue(1e-6,1e-5));
+        if(m_data->GetReceiver()==Mac48Address::ConvertFrom(Broadcast))
+        {
+
+            m_sendPhase = Simulator::Schedule(SIFS+addRandom,&CognitiveGeneralNetDevice::TransmitData,this);
+        }
+        else
+        {
+            m_sendPhase = Simulator::Schedule(SIFS+addRandom,&CognitiveGeneralNetDevice::SendRTS,this);
+        }
     }
     else
     {
+        m_rv->SetAttribute("Min",DoubleValue(0.0));
         m_rv->SetAttribute("Max",DoubleValue((1<<m_CW)-1));
         m_backOffSlots = m_rv->GetInteger() + 1;
         m_sendPhase.Cancel();
@@ -383,7 +408,7 @@ void
 
 CognitiveGeneralNetDevice::SendRTS()
 {
-    NS_ASSERT_MSG(m_data,"This Net Device dosn't have an address");
+    NS_ASSERT_MSG(m_data,"This Net Device doesn't have a data packet");
     Ptr<Packet> rtsPacket = Create<Packet>(RTSsize);
     Time duration = m_rate.CalculateBytesTxTime(ACKsize + CTSsize) + 3*SIFS + m_data->GetDuration() + margin ;
     Ptr<MacDcfFrame> rts = CreateObject<MacDcfFrame>();  
@@ -392,8 +417,8 @@ CognitiveGeneralNetDevice::SendRTS()
     rts->SetReceiver(m_data->GetReceiver());
     rts->SetDuration(duration);
     rts->SetKind(FrameType::RTS);
+    rts->SetOriginalPacketUid(m_data->GetPacket()->GetUid());
     m_map[rtsPacket->GetUid()] = rts; 
-    //std::cout << m_node->GetId() << " going to send RTS frame " << Simulator::Now()<< std::endl;
     m_sendPhase.Cancel(); 
     m_sendPhase = Simulator::ScheduleNow(&CognitiveGeneralNetDevice::StartTransmission,this,rtsPacket);
 }
@@ -416,6 +441,7 @@ CognitiveGeneralNetDevice::SendCTS()
     cts->SetPacket(ctsPacket);
     cts->SetReceiver(m_rdata->GetSender());
     cts->SetSender(m_rdata->GetReceiver());
+    cts->SetOriginalPacketUid(m_rdata->GetOriginalPacketUid());
     cts->SetDuration(duration + margin);
     cts->SetKind(FrameType::CTS);
     m_map[ctsPacket->GetUid()] = cts;
@@ -437,6 +463,7 @@ void
 CognitiveGeneralNetDevice::TransmitData()
 {
     NS_ASSERT_MSG(m_data,"This Net Device doesn't have an address");
+    //std::cout << m_node->GetId() << std::endl;
     Time duration = m_rate.CalculateBytesTxTime(ACKsize) + SIFS;
     m_data->SetDuration(duration + margin);
     m_data->SetKind(FrameType::DATA);
@@ -453,7 +480,23 @@ CognitiveGeneralNetDevice::ReceiveData()
     m_rdata->SetArrivalTime(Simulator::Now());
     latency+=m_rdata->CalculateLatency().GetSeconds();
     m_sendPhase.Cancel();
-    m_sendPhase = Simulator::Schedule(SIFS,&CognitiveGeneralNetDevice::SendAck,this);
+    if(m_rdata->GetReceiver()==Mac48Address::ConvertFrom(Broadcast))
+    {
+        if(!m_receiveCtrlPacket.IsNull())
+        {
+            m_receiveCtrlPacket(m_rdata->GetPacket());
+        }
+        m_sendPhase = Simulator::Schedule(SIFS,&CognitiveGeneralNetDevice::ContinueTransmission,this);
+    }
+    else
+    {
+      /*  if(!m_receiveCtrlPacket.IsNull())
+        {
+            m_receiveCtrlPacket(m_rdata->GetPacket());
+        }
+     `*/
+        m_sendPhase = Simulator::Schedule(SIFS,&CognitiveGeneralNetDevice::SendAck,this);
+    }
 }
 
 void 
@@ -467,21 +510,24 @@ CognitiveGeneralNetDevice::SendAck()
     ack->SetSender(m_rdata->GetReceiver());
     ack->SetDuration(Seconds(0.0));
     ack->SetKind(FrameType::ACK);
+    ack->SetOriginalPacketUid(m_rdata->GetOriginalPacketUid());
     m_map[ackPacket->GetUid()] = ack; 
-    //std::cout << m_node->GetId() << " going to send ACK frame " << Simulator::Now() << std::endl;
     m_sendPhase.Cancel();
     m_sendPhase = Simulator::ScheduleNow(&CognitiveGeneralNetDevice::StartTransmission,this,ackPacket);
-    
+    if(!m_receiveCtrlPacket.IsNull())
+    {
+        m_receiveCtrlPacket(m_rdata->GetPacket());
+    }
 }
 
 void 
 
 CognitiveGeneralNetDevice::ReceiveAck()
 {
+   // std::cout << "I have received an ack " << m_data->GetPacket()->GetUid() << '\n'; 
     m_currentTX = false;
-    recPackets++;
+    recPackets+= m_dataSet.count(m_rdata->GetOriginalPacketUid());
     m_sendPhase.Cancel();
-    //std::cout << m_node->GetId() << " We have received an ack" << std::endl; 
     m_sendPhase = Simulator::ScheduleNow(&CognitiveGeneralNetDevice::ContinueTransmission,this);
     
 }
@@ -526,6 +572,11 @@ bool
 CognitiveGeneralNetDevice::Send(Ptr<Packet> packet, const Address& dest, uint16_t protocolNumber)
 {
     NS_LOG_FUNCTION(packet << dest << protocolNumber);
+    if(protocolNumber!=1000)
+    {
+        m_dataSet.insert(packet->GetUid());
+    }
+    // std::cout << "going to send  " << m_node->GetId() << " " << dest << '\n';
     return SendFrom(packet, m_address, dest, protocolNumber);
 }
 
@@ -536,11 +587,10 @@ CognitiveGeneralNetDevice::SendFrom(Ptr<Packet> packet,
                            const Address& dest,
                            uint16_t protocolNumber)
 {
-    genPackets++;
+    if(protocolNumber!=1000){genPackets++;}
     NS_LOG_FUNCTION(packet << src << dest << protocolNumber);
     bool sendOk = true;
     Ptr<MacDcfFrame> data = CreateObject<MacDcfFrame>();
-
     Mac48Address msrc = Mac48Address::ConvertFrom(src);
     Mac48Address mdest = Mac48Address::ConvertFrom(dest);
     data->SetPacket(packet);
@@ -548,14 +598,16 @@ CognitiveGeneralNetDevice::SendFrom(Ptr<Packet> packet,
     data->SetReceiver(mdest);
     data->SetDuration(m_rate.CalculateBytesTxTime(packet->GetSize()));
     data->SetCreationTime(Simulator::Now());
+    data->SetOriginalPacketUid(packet->GetUid());
     
     // If the device is idle, transmission starts immediately. Otherwise,
     // the transmission will be started by NotifyTransmissionEnd
     //
 
     NS_LOG_LOGIC(this << " state=" << m_state);
-    if (m_queue->empty() && !m_sendPhase.IsPending() && !m_currentTX && m_state!=RX)
+    if (m_queue->empty() && !m_sendPhase.IsPending() && !m_currentTX && m_state!=RX && m_IhaveChannel)
     {
+       // std::cout << m_node->GetId()<< " going to send directly without queueing " << packet->GetUid() << '\n';
         NS_LOG_LOGIC("new packet is head of queue, starting TX immediately");
         m_currentTX = true;
         m_data = data;
@@ -564,6 +616,7 @@ CognitiveGeneralNetDevice::SendFrom(Ptr<Packet> packet,
     }
     else
     {
+       // std::cout << m_node->GetId()<< " enqueueing new packet " << packet->GetUid() << '\n';
         NS_LOG_LOGIC("enqueueing new packet");
         if (!m_queue->emplace(data))
         {
@@ -593,14 +646,32 @@ CognitiveGeneralNetDevice::SetCcaResultCallback(SensingResultCallback c)
 
 void
 
-CognitiveGeneralNetDevice::StartTransmission(Ptr<Packet> packet)
+CognitiveGeneralNetDevice::SetGetRemainingEnergyCallback(GetRemainingEnergyCallback c)
 {
-    //std::cout << m_node->GetId() << " Welcome to data transmission " << Simulator::Now() << std::endl;
+    NS_LOG_FUNCTION(this);
+    m_remainingEnergy = c; 
+}
+
+void
+
+CognitiveGeneralNetDevice::SetCurrentDataChannelCallback(CurrentDataChannelCallback c)
+{
+    NS_LOG_FUNCTION(this);
+    m_currentDataChannel = c;
+}
+
+void
+
+CognitiveGeneralNetDevice::StartTransmission(Ptr<Packet> packet)
+{  
     NS_LOG_FUNCTION(this);
 
     NS_ASSERT(packet);
     NS_ASSERT_MSG(m_state == IDLE,m_node->GetId());
-
+    if(!m_IhaveChannel)
+    {
+        return ;
+    }
     if (m_phyTxStartCallback(packet))
     {
         NS_LOG_WARN("PHY refused to start TX");
@@ -618,18 +689,30 @@ CognitiveGeneralNetDevice::NotifyPartialTransmissionEnd(Ptr<const Packet>)
     NS_LOG_FUNCTION(this);
     NS_ASSERT_MSG(m_state == TX, "TX end notified while state != TX");
     ChangeState(IDLE);
+    if(m_data)
+    {
+        if(m_data->GetReceiver()==Mac48Address::ConvertFrom(Broadcast))
+        {
+            m_currentTX = false;
+            m_sendPhase.Cancel();
+            m_sendPhase = Simulator::ScheduleNow(&CognitiveGeneralNetDevice::ContinueTransmission,this);
+        }
+    }
 }
 
 void 
 
 CognitiveGeneralNetDevice::ContinueTransmission()
 {
-    //std::cout<< m_node->GetId() <<" We are going to continue transmission " << Simulator::Now() << std::endl;
+  //  std::cout<< m_node->GetId() <<" We are going to continue transmission " << Simulator::Now() ;
     NS_LOG_FUNCTION(this);
     ChangeState(IDLE);
     NS_ASSERT(m_queue);
+    if(!m_IhaveChannel){return;}
+   // std::cout << m_node->GetId() << " I'm going to continue transmission ";
     if(m_currentTX)
     {
+       // std::cout << " I have a packet currently " << '\n';
         m_sendPhase.Cancel();
         if(m_backoff)
         {
@@ -642,12 +725,14 @@ CognitiveGeneralNetDevice::ContinueTransmission()
     }
     else
     {
+      //  std::cout << " I don't have a packet currently \n";
         if (!m_queue->empty())
         {
             Ptr<MacDcfFrame> data = m_queue->front();
             m_queue->pop();
             NS_ASSERT(data);
             m_data = data;
+            m_currentTX = true;
             NS_LOG_LOGIC("scheduling transmission now");
             m_sendPhase.Cancel();
             m_sendPhase = Simulator::ScheduleNow(&CognitiveGeneralNetDevice::DIFSPhase,this);
@@ -676,7 +761,7 @@ CognitiveGeneralNetDevice::NotifyTransmissionAbort(Ptr<const Packet>)
     NS_LOG_FUNCTION(this);
     if(m_state==SENSING){return;}
     NS_ASSERT_MSG(m_state==TX,"called to abort transmitting while not transmitting");
-    //std::cout << m_node->GetId() << "has stopped transmission " << Simulator::Now() << std::endl;
+   // std::cout << m_node->GetId() << "has stopped transmission " << Simulator::Now() << std::endl;
     m_sendPhase.Cancel();
     ChangeState(IDLE);
 }
@@ -696,15 +781,16 @@ void
 CognitiveGeneralNetDevice::NotifyReceptionEndOk(Ptr<Packet> packet)
 {
     NS_LOG_FUNCTION(this << packet);
-    //std::cout << m_node->GetId() << " Reception has finished Ok " << Simulator::Now() << std::endl;
     if(!m_map.count(packet->GetUid())){return;}
     ChangeState(IDLE);
     
     m_rdata = m_map[packet->GetUid()];
 
     m_paddress = m_rdata->GetSender();
-
-    if(m_rdata->GetReceiver()!=m_address)
+  /*  std::cout << m_node->GetId() << " I have received packet "  << m_rdata->GetPacket()->GetUid() << " sent from "
+     << m_rdata->GetSender() << " to " << m_rdata->GetReceiver() << "\n"; 
+    */
+    if(m_rdata->GetReceiver()!=m_address && m_rdata->GetReceiver()!=Mac48Address::ConvertFrom(Broadcast))
     { 
         m_sendPhase.Cancel();
         
@@ -804,8 +890,38 @@ void
 
 CognitiveGeneralNetDevice::ChangeState(CognitiveState s)
 {
-    m_state = s;    
-    std::cout << m_node->GetId() << " " << m_state << std::endl;
+    m_state = s;  
+}
+
+double
+
+CognitiveGeneralNetDevice::GetReamainingEnergy()
+{
+    NS_ASSERT_MSG(!m_remainingEnergy.IsNull(),"you haven't set the get energy callback between phy and mac");
+    return m_remainingEnergy();
+}
+
+void
+
+CognitiveGeneralNetDevice::SetClusterInfo(uint16_t CADC , uint16_t CBDC)
+{
+    NS_LOG_FUNCTION(this);
+    m_CADC = CADC ;
+    m_CBDC = CBDC ;
+    m_IhaveChannel = true;
+    if(!m_currentDataChannel.IsNull())
+    {
+        m_currentDataChannel(m_CADC);
+        m_sendPhase.Cancel();
+        m_sendPhase = Simulator::ScheduleNow(&CognitiveGeneralNetDevice::ContinueTransmission,this);
+    }
+}
+
+void
+
+CognitiveGeneralNetDevice::TransmissionPermission(bool b)
+{
+    m_IhaveChannel = b ;
 }
 
 

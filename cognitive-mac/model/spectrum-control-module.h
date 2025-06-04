@@ -18,7 +18,7 @@ namespace ns3
 
   
 typedef Callback<double,uint16_t> SenseResultCallback;
-typedef Callback<void,std::vector<double>> QtableResultCallback;
+typedef Callback<void,std::map<uint16_t,double>> QtableResultCallback;
 
     class SpectrumControlModule : public Object
     {
@@ -104,7 +104,7 @@ typedef Callback<void,std::vector<double>> QtableResultCallback;
          * @brief sending the result for 
          * the control application
          */
-        void SendSensingResult();
+        void SendSensingResult(uint16_t bgIndex);
 
         /**
          * @return the bandgroup sensing time

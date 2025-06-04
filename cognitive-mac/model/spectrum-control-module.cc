@@ -156,14 +156,14 @@ SpectrumControlModule::UpdateQtable(uint16_t Index)
         double P = 0.0 ; 
         for(uint16_t j = 0 ; j < m_Nsensing ; j++)
         {
-          //  std::cout << Temp[i][j] << " ";
+            //std::cout << Temp[i][j] << " ";
             if(!Temp[i][j])
             {
                 if(j==0 || Temp[i][j-1]){T++;}
                 P++;
             }
         }
-       // std::cout << std::endl;
+     //   std::cout << std::endl;
         if(T > 0.0)
         {
             P = P / m_Nsensing ;
@@ -179,16 +179,23 @@ SpectrumControlModule::UpdateQtable(uint16_t Index)
         sum+=(*m_Qtable)[Index*m_bgSize + i] ;
     }
     sum /= m_bgSize;
-    Simulator::ScheduleNow(&SpectrumControlModule::SendSensingResult,this);
+    Simulator::ScheduleNow(&SpectrumControlModule::SendSensingResult,this,Index);
 }
 
 void
 
-SpectrumControlModule::SendSensingResult()
+SpectrumControlModule::SendSensingResult(uint16_t bgIndex)
 {
     NS_ASSERT_MSG(!m_QtableResultCallback.IsNull(),"you haven't connected to the control application");
-    std::vector<double> toSend(*m_Qtable);
-    m_QtableResultCallback(toSend);
+    std::map<uint16_t,double> Qtable;
+    for(int i = 0 ; i < m_bgSize ; i++)
+    {
+        if(!Temp[i].back())
+        {
+            Qtable[bgIndex*m_bgSize + i] = (*m_Qtable)[bgIndex*m_bgSize + i ];
+        }
+    }
+    m_QtableResultCallback(Qtable);
 }
 
 void 

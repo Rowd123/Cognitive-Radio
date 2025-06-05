@@ -339,14 +339,6 @@ CognitiveGeneralNetDevice::SetPromiscReceiveCallback(NetDevice::PromiscReceiveCa
     m_promiscRxCallback = cb;
 }
 
-void
-
-CognitiveGeneralNetDevice::SetReceiveCtrlPacketCallback(ReceiveCtrlPacketCallback c)
-{
-    NS_LOG_FUNCTION(this);
-    m_receiveCtrlPacket = c;
-}
-
 bool
 
 CognitiveGeneralNetDevice::SupportsSendFrom() const
@@ -382,7 +374,7 @@ CognitiveGeneralNetDevice::DIFSDecision()
     {
         m_sendPhase.Cancel();
         Time addRandom = Seconds(m_rv->GetValue(1e-6,1e-5));
-        if(m_data->GetReceiver()==Mac48Address::ConvertFrom(Broadcast))
+        if(m_data->GetCurrentReceiver()==Mac48Address::ConvertFrom(Broadcast))
         {
 
             m_sendPhase = Simulator::Schedule(SIFS+addRandom,&CognitiveGeneralNetDevice::TransmitData,this);
@@ -413,8 +405,8 @@ CognitiveGeneralNetDevice::SendRTS()
     Time duration = m_rate.CalculateBytesTxTime(ACKsize + CTSsize) + 3*SIFS + m_data->GetDuration() + margin ;
     Ptr<MacDcfFrame> rts = CreateObject<MacDcfFrame>();  
     rts->SetPacket(rtsPacket);
-    rts->SetSender(m_data->GetSender());
-    rts->SetReceiver(m_data->GetReceiver());
+    rts->SetCurrentSender(m_data->GetCurrentSender());
+    rts->SetCurrentReceiver(m_data->GetCurrentReceiver());
     rts->SetDuration(duration);
     rts->SetKind(FrameType::RTS);
     rts->SetOriginalPacketUid(m_data->GetPacket()->GetUid());
@@ -439,8 +431,8 @@ CognitiveGeneralNetDevice::SendCTS()
     Time duration = m_rate.CalculateBytesTxTime(ACKsize) + 2*SIFS + m_rdata->GetDuration() ;
     Ptr<MacDcfFrame> cts = CreateObject<MacDcfFrame>();
     cts->SetPacket(ctsPacket);
-    cts->SetReceiver(m_rdata->GetSender());
-    cts->SetSender(m_rdata->GetReceiver());
+    cts->SetCurrentReceiver(m_rdata->GetCurrentSender());
+    cts->SetCurrentSender(m_rdata->GetCurrentReceiver());
     cts->SetOriginalPacketUid(m_rdata->GetOriginalPacketUid());
     cts->SetDuration(duration + margin);
     cts->SetKind(FrameType::CTS);
@@ -480,12 +472,10 @@ CognitiveGeneralNetDevice::ReceiveData()
     m_rdata->SetArrivalTime(Simulator::Now());
     latency+=m_rdata->CalculateLatency().GetSeconds();
     m_sendPhase.Cancel();
-    if(m_rdata->GetReceiver()==Mac48Address::ConvertFrom(Broadcast))
+    if(m_rdata->GetCurrentReceiver()==Mac48Address::ConvertFrom(Broadcast))
     {
-        if(!m_receiveCtrlPacket.IsNull())
-        {
-            m_receiveCtrlPacket(m_rdata->GetPacket());
-        }
+        NS_ASSERT_MSG(m_routingUnite,"the Network layer unit isn't set");
+        m_routingUnite->ReceiveFrame(m_rdata);
         m_sendPhase = Simulator::Schedule(SIFS,&CognitiveGeneralNetDevice::ContinueTransmission,this);
     }
     else
@@ -506,18 +496,16 @@ CognitiveGeneralNetDevice::SendAck()
     Ptr<Packet> ackPacket = Create<Packet>(ACKsize);
     Ptr<MacDcfFrame> ack = CreateObject<MacDcfFrame>();
     ack->SetPacket(ackPacket);
-    ack->SetReceiver(m_rdata->GetSender());
-    ack->SetSender(m_rdata->GetReceiver());
+    ack->SetCurrentReceiver(m_rdata->GetCurrentSender());
+    ack->SetCurrentSender(m_rdata->GetCurrentReceiver());
     ack->SetDuration(Seconds(0.0));
     ack->SetKind(FrameType::ACK);
     ack->SetOriginalPacketUid(m_rdata->GetOriginalPacketUid());
     m_map[ackPacket->GetUid()] = ack; 
     m_sendPhase.Cancel();
     m_sendPhase = Simulator::ScheduleNow(&CognitiveGeneralNetDevice::StartTransmission,this,ackPacket);
-    if(!m_receiveCtrlPacket.IsNull())
-    {
-        m_receiveCtrlPacket(m_rdata->GetPacket());
-    }
+    NS_ASSERT_MSG(m_routingUnite,"the Network layer unit isn't set");
+    m_routingUnite->ReceiveFrame(m_rdata);
 }
 
 void 
@@ -587,20 +575,17 @@ CognitiveGeneralNetDevice::SendFrom(Ptr<Packet> packet,
                            const Address& dest,
                            uint16_t protocolNumber)
 {
-    if(protocolNumber!=1000){genPackets++;}
     NS_LOG_FUNCTION(packet << src << dest << protocolNumber);
-    bool sendOk = true;
-    Ptr<MacDcfFrame> data = CreateObject<MacDcfFrame>();
-    Mac48Address msrc = Mac48Address::ConvertFrom(src);
-    Mac48Address mdest = Mac48Address::ConvertFrom(dest);
-    data->SetPacket(packet);
-    data->SetSender(msrc);
-    data->SetReceiver(mdest);
-    data->SetDuration(m_rate.CalculateBytesTxTime(packet->GetSize()));
-    data->SetCreationTime(Simulator::Now());
-    data->SetOriginalPacketUid(packet->GetUid());
-    
-    // If the device is idle, transmission starts immediately. Otherwise,
+    m_routingUnite->SendPacket(packet,src,dest,protocolNumber);
+   // std::cout<< m_node->GetId() << " " << Simulator::Now() << " " << packet << " " << sendOk << std::endl;
+    return true;
+}
+
+void 
+
+CognitiveGeneralNetDevice::SendFrame(Ptr<MacDcfFrame> frame)
+{
+        // If the device is idle, transmission starts immediately. Otherwise,
     // the transmission will be started by NotifyTransmissionEnd
     //
 
@@ -610,7 +595,7 @@ CognitiveGeneralNetDevice::SendFrom(Ptr<Packet> packet,
        // std::cout << m_node->GetId()<< " going to send directly without queueing " << packet->GetUid() << '\n';
         NS_LOG_LOGIC("new packet is head of queue, starting TX immediately");
         m_currentTX = true;
-        m_data = data;
+        m_data = frame;
         m_sendPhase.Cancel();
         m_sendPhase = Simulator::ScheduleNow(&CognitiveGeneralNetDevice::DIFSPhase,this);
     }
@@ -618,14 +603,11 @@ CognitiveGeneralNetDevice::SendFrom(Ptr<Packet> packet,
     {
        // std::cout << m_node->GetId()<< " enqueueing new packet " << packet->GetUid() << '\n';
         NS_LOG_LOGIC("enqueueing new packet");
-        if (!m_queue->emplace(data))
+        if (!m_queue->emplace(frame))
         {
-                m_MacTxDropTrace(packet);
-                sendOk = false;
+                m_MacTxDropTrace(frame->GetPacket());
         }
     }
-   // std::cout<< m_node->GetId() << " " << Simulator::Now() << " " << packet << " " << sendOk << std::endl;
-    return sendOk;
 }
 
 void
@@ -662,6 +644,13 @@ CognitiveGeneralNetDevice::SetCurrentDataChannelCallback(CurrentDataChannelCallb
 
 void
 
+CognitiveGeneralNetDevice::SetRoutingUnite(Ptr<CognitiveRoutingUnite> routingUnite)
+{
+    m_routingUnite = routingUnite;
+}
+
+void
+
 CognitiveGeneralNetDevice::StartTransmission(Ptr<Packet> packet)
 {  
     NS_LOG_FUNCTION(this);
@@ -691,7 +680,7 @@ CognitiveGeneralNetDevice::NotifyPartialTransmissionEnd(Ptr<const Packet>)
     ChangeState(IDLE);
     if(m_data)
     {
-        if(m_data->GetReceiver()==Mac48Address::ConvertFrom(Broadcast))
+        if(m_data->GetCurrentReceiver()==Mac48Address::ConvertFrom(Broadcast))
         {
             m_currentTX = false;
             m_sendPhase.Cancel();
@@ -786,11 +775,11 @@ CognitiveGeneralNetDevice::NotifyReceptionEndOk(Ptr<Packet> packet)
     
     m_rdata = m_map[packet->GetUid()];
 
-    m_paddress = m_rdata->GetSender();
+    m_paddress = m_rdata->GetCurrentSender();
   /*  std::cout << m_node->GetId() << " I have received packet "  << m_rdata->GetPacket()->GetUid() << " sent from "
      << m_rdata->GetSender() << " to " << m_rdata->GetReceiver() << "\n"; 
     */
-    if(m_rdata->GetReceiver()!=m_address && m_rdata->GetReceiver()!=Mac48Address::ConvertFrom(Broadcast))
+    if(m_rdata->GetCurrentReceiver()!=m_address && m_rdata->GetCurrentReceiver()!=Mac48Address::ConvertFrom(Broadcast))
     { 
         m_sendPhase.Cancel();
         
@@ -903,12 +892,25 @@ CognitiveGeneralNetDevice::GetReamainingEnergy()
 
 void
 
-CognitiveGeneralNetDevice::SetClusterInfo(uint16_t CADC , uint16_t CBDC)
+CognitiveGeneralNetDevice::SetClusterInfo(uint16_t CADC , uint16_t CBDC, Address CHaddress)
 {
     NS_LOG_FUNCTION(this);
     m_CADC = CADC ;
     m_CBDC = CBDC ;
     m_IhaveChannel = true;
+    m_CHaddress = CHaddress;
+    if(!(*m_queue).empty())
+    {
+        std::queue<Ptr<MacDcfFrame>> *temQueue = new std::queue<Ptr<MacDcfFrame>>();
+        while(!(*m_queue).empty())
+        {
+            Ptr<MacDcfFrame> tem = (*m_queue).front();
+            (*m_queue).pop();
+            tem->SetCurrentReceiver(Mac48Address::ConvertFrom(m_CHaddress)); 
+            (*temQueue).push(tem);
+        }
+        m_queue = temQueue;
+    }
     if(!m_currentDataChannel.IsNull())
     {
         m_currentDataChannel(m_CADC);

@@ -505,7 +505,8 @@ CognitiveControlApplication::EvaluateCH_REQs()
             m_ImClusterHead = true;
             if(!m_setCommonDataChannelsCallback.IsNull())
             {
-                  m_setCommonDataChannelsCallback(m_CADC,m_CBDC);
+                  m_routingUnite->SetCluster(m_CHaddress);
+                  m_setCommonDataChannelsCallback(m_CADC,m_CBDC,m_CHaddress);
             }
             Simulator::ScheduleNow(&CognitiveControlApplication::SendMsg,this,
                                     CognitiveControlMessage::CH_ANM);
@@ -527,7 +528,7 @@ void
 
 CognitiveControlApplication::EvaluateCH_ANMs()
 {
-      std::cout << m_node->GetId() << " going to evalute CH_ANMs ";
+      std::cout << m_node->GetId() << " going to evalute CH_ANMs \n";
       if(m_ImClusterHead)
       {
             return ;
@@ -548,7 +549,8 @@ CognitiveControlApplication::EvaluateCH_ANMs()
             if(!m_setCommonDataChannelsCallback.IsNull())
             {
                   std::cout << " my cluster head is " << m_CHaddress << '\n'; 
-                  m_setCommonDataChannelsCallback(m_CADC,m_CBDC);
+                  m_routingUnite->SetCluster(m_CHaddress);
+                  m_setCommonDataChannelsCallback(m_CADC,m_CBDC,m_CHaddress);
             }
       }
       Simulator::ScheduleNow(&CognitiveControlApplication::SendMsg,this,
@@ -586,6 +588,20 @@ void
 CognitiveControlApplication::SetMaximumNeighboringNodes(uint16_t number)
 {
       m_NNmax = number;
+}
+
+void 
+
+CognitiveControlApplication::SetCognitiveRoutingUnite(Ptr<CognitiveRoutingUnite> routingUnite)
+{
+      m_routingUnite = routingUnite;
+}
+
+Ptr<CognitiveRoutingUnite>
+
+CognitiveControlApplication::GetCognitiveRoutingUnite()
+{
+      return m_routingUnite;
 }
 
 }

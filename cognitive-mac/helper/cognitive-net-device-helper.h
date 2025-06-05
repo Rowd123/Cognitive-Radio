@@ -148,6 +148,7 @@ class CognitiveNetDeviceHelper
     ObjectFactory m_antenna;            //!< Object factory for the Antenna objects
     ObjectFactory m_controlApp;         //!< Object factory for the control net device
     ObjectFactory m_spectrumCtrl;       //!< Object factory for the spectrum control module 
+    ObjectFactory m_routingUnite;       //!< Object factory for the routing uniter 
     Ptr<SpectrumChannel> m_channel;     //!< data Channel
     Ptr<SpectrumValue> m_dataTxPsd;     //!< Tx power spectral density for data device
     Ptr<SpectrumValue> m_ctrlTxPsd;     //!< Tx power spectral density for control device

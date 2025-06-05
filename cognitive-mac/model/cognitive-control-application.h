@@ -10,6 +10,7 @@
 #include "cognitive-general-net-device.h"
 #include "spectrum-control-module.h"
 #include "cognitive-control-message.h"
+#include "cognitive-routing-unite.h"
 #include "ns3/application.h"
 #include "ns3/address.h"
 #include "ns3/simulator.h"
@@ -21,7 +22,7 @@ namespace ns3
 typedef Callback<double , uint16_t> ChannelSensingCallback ;
 typedef Callback<void , Time> StartSensingPeriodCallback ; 
 typedef Callback<double> GetRemainingEnergyCallback ;
-typedef Callback<void,uint16_t,uint16_t> SetCommonDataChannelsCallback;
+typedef Callback<void,uint16_t,uint16_t,Address> SetCommonDataChannelsCallback;
 
     class CognitiveControlApplication : public Application
     {
@@ -134,6 +135,22 @@ typedef Callback<void,uint16_t,uint16_t> SetCommonDataChannelsCallback;
           void SetAddress(Address m_address);
 
           /**
+           * @brief set the routing unite
+           * representing the network 
+           * layer
+           * @param routingUnite the routing unite
+           */
+          void SetCognitiveRoutingUnite(Ptr<CognitiveRoutingUnite> routingUnite);
+
+          /**
+           * @brief get the routing unite
+           * representing the network
+           * layer
+           * @return the routing unite
+           */
+          Ptr<CognitiveRoutingUnite> GetCognitiveRoutingUnite();
+
+          /**
            * @brief receiving a packet by the 
            * MAC and then forwarding it to the
            * control application
@@ -215,6 +232,7 @@ typedef Callback<void,uint16_t,uint16_t> SetCommonDataChannelsCallback;
           Ptr<SpectrumControlModule> m_spectrumControlModule;  //!< the spectrum control module 
           Ptr<NetDevice> m_dataDevice;                         //!< the net device 
           Ptr<NetDevice> m_controlDevice;                      //!< the control device
+          Ptr<CognitiveRoutingUnite> m_routingUnite;           //!< the routing unite
 
           ChannelSensingCallback m_channelSensingCallback; 
           StartSensingPeriodCallback m_startSensingPeriodCallback;

@@ -36,6 +36,7 @@ CognitiveNetDeviceHelper::CognitiveNetDeviceHelper():
     m_antenna.SetTypeId("ns3::IsotropicAntennaModel");
     m_controlApp.SetTypeId("ns3::CognitiveControlApplication");
     m_spectrumCtrl.SetTypeId("ns3::SpectrumControlModule");
+    m_routingUnite.SetTypeId("ns3::CognitiveRoutingUnite");
 }
 
 CognitiveNetDeviceHelper::~CognitiveNetDeviceHelper()
@@ -148,6 +149,7 @@ CognitiveNetDeviceHelper::Install(NodeContainer c) const
 
         Ptr<CognitiveControlApplication> ctrlApp = (m_controlApp.Create())->GetObject<CognitiveControlApplication>();
         Ptr<SpectrumControlModule> ctrlSpect = (m_spectrumCtrl.Create())->GetObject<SpectrumControlModule>();
+        Ptr<CognitiveRoutingUnite> routingUnite = (m_routingUnite.Create())->GetObject<CognitiveRoutingUnite>();
         
         ctrlApp->SetStartTime(m_startTime);
         ctrlApp->SetStopTime(m_stopTime);
@@ -170,6 +172,15 @@ CognitiveNetDeviceHelper::Install(NodeContainer c) const
         ctrlApp->SetSpectrumControlModule(ctrlSpect);
         ctrlApp->SetDataDevice(datadev);
         ctrlApp->SetControlDevice(controldev);
+        ctrlApp->SetCognitiveRoutingUnite(routingUnite);
+        datadev->SetRoutingUnite(routingUnite);
+        controldev->SetRoutingUnite(routingUnite);
+        routingUnite->SetAddress(datadev->GetAddress());
+        
+        routingUnite->SetSendDataFrameCallback(MakeCallback(&CognitiveGeneralNetDevice::SendFrame,datadev));
+        routingUnite->SetSendCtrlFrameCallback(MakeCallback(&CognitiveGeneralNetDevice::SendFrame,datadev));
+        routingUnite->SetCtrlAppSendPacketCallback(
+            MakeCallback(&CognitiveControlApplication::ReceiveControlMsg,ctrlApp));
 
         datadev->SetDeviceKind(true);
 
@@ -185,8 +196,6 @@ CognitiveNetDeviceHelper::Install(NodeContainer c) const
             MakeCallback(&CognitiveGeneralNetDevice::GetReamainingEnergy,datadev));
         ctrlApp->SetSetCommonDataChannelsCallback(
             MakeCallback(&CognitiveGeneralNetDevice::SetClusterInfo,datadev));
-        controldev->SetReceiveCtrlPacketCallback(
-            MakeCallback(&CognitiveControlApplication::ReceiveControlMsg,ctrlApp));
             
         // note that we could have used a SpectrumPhyHelper here, but
         // given that it is straightforward to handle the configuration
@@ -195,8 +204,11 @@ CognitiveNetDeviceHelper::Install(NodeContainer c) const
 
         Ptr<CognitivePhyDevice> dataphy = (m_phy.Create())->GetObject<CognitivePhyDevice>();
         Ptr<CognitivePhyDevice> controlphy = (m_phy.Create())->GetObject<CognitivePhyDevice>();
+
         NS_ASSERT(dataphy);
         NS_ASSERT(controldev);
+
+        routingUnite->SetDataRate(dataphy->GetRate());
 
         datadev->SetGetRemainingEnergyCallback(
             MakeCallback(&CognitivePhyDevice::GetRemainingEnergy,dataphy));

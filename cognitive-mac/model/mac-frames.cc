@@ -54,16 +54,30 @@ MacDcfFrame::SetPacket(Ptr<Packet> packet)
 
 void
 
-MacDcfFrame::SetSender(const Mac48Address sender)
+MacDcfFrame::SetOriginalSender(const Mac48Address sender)
 {
     m_TxAddress = sender;
 }
 
 void 
 
-MacDcfFrame::SetReceiver(const Mac48Address receiver)
+MacDcfFrame::SetOriginalReceiver(const Mac48Address receiver)
 {
     m_RxAddress = receiver;
+}
+
+void
+
+MacDcfFrame::SetCurrentSender(const Mac48Address curSender)
+{
+    m_curTxAddress = curSender;
+}
+
+void
+
+MacDcfFrame::SetCurrentReceiver(const Mac48Address curReceiver)
+{
+    m_curRxAddress = curReceiver;
 }
 
 void
@@ -89,16 +103,30 @@ MacDcfFrame::GetPacket()
 
 Mac48Address
 
-MacDcfFrame::GetSender()
+MacDcfFrame::GetOriginalSender()
 {
     return m_TxAddress;
 }
 
 Mac48Address
 
-MacDcfFrame::GetReceiver()
+MacDcfFrame::GetOriginalReceiver()
 {
     return m_RxAddress;
+}
+
+Mac48Address
+
+MacDcfFrame::GetCurrentSender()
+{
+    return m_curTxAddress;
+}
+
+Mac48Address
+
+MacDcfFrame::GetCurrentReceiver()
+{
+    return m_curRxAddress;
 }
 
 Time
@@ -148,6 +176,20 @@ void
 MacDcfFrame::SetOriginalPacketUid(uint32_t uid)
 {
     m_originalPkt = uid;
+}
+
+void
+
+MacDcfFrame::SetProtocolNumber(uint16_t protocolNumber)
+{
+    m_protocolNum = protocolNumber;
+}
+
+uint16_t
+
+MacDcfFrame::GetProtocolNumber()
+{
+    return m_protocolNum;
 }
 
 }

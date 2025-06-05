@@ -46,13 +46,27 @@ class MacDcfFrame : public Object
        * Set the Sender Address
        * @param sender the address of the sender
        */
-      void SetSender(const Mac48Address sender);
+      void SetOriginalSender(const Mac48Address sender);
 
       /**
        * Set the receiver Address
        * @param receiver the address of the receiver
        */
-      void SetReceiver(const Mac48Address receiver);
+      void SetOriginalReceiver(const Mac48Address receiver);
+
+      /**
+       * set the current sender
+       * hop address
+       * @param curSender the address of the sender
+       */
+      void SetCurrentSender(const Mac48Address curSender);
+
+      /**
+       * set the current receiver
+       * hop address
+       * @param curReceiver the address of the receiver
+       */
+      void SetCurrentReceiver(const Mac48Address curReceiver);
 
       /**
        * Set the duration
@@ -63,6 +77,12 @@ class MacDcfFrame : public Object
        * Set the kind
        */
       void SetKind(FrameType typ);
+
+      /**
+       * Set the protocol
+       * number 
+       */
+      void SetProtocolNumber(uint16_t protocolNumber);
       /**
        * Get the Packet
        * @return the packet of this frame
@@ -73,13 +93,25 @@ class MacDcfFrame : public Object
        * Get the Sender Address
        * @return the address of the sender
        */
-      Mac48Address GetSender();
+      Mac48Address GetOriginalSender();
       
       /**
        * Get the receiver address
        * @return address of the sender
        */
-      Mac48Address GetReceiver();
+      Mac48Address GetOriginalReceiver();
+
+      /**
+       * Get the current sender address
+       * @return the address of the current sender
+       */
+      Mac48Address GetCurrentSender();
+
+      /**
+       * Get the current receiver address
+       * @return the address of the current receiver
+       */
+      Mac48Address GetCurrentReceiver();
 
       /**
        * Get the duration of the transmission
@@ -98,6 +130,13 @@ class MacDcfFrame : public Object
        * @return time latency
        */
       Time CalculateLatency();
+
+      /**
+       * Getting the number of 
+       * protocol 
+       * @return protocol number
+       */
+      uint16_t GetProtocolNumber();
 
       /**
        * Ge the uid of the original packet
@@ -131,11 +170,14 @@ class MacDcfFrame : public Object
       Ptr<Packet>  m_packet;       //!< the packet of the data frame
       Mac48Address m_TxAddress;    //!< the address of the sender
       Mac48Address m_RxAddress;    //!< the address of the receiever
+      Mac48Address m_curTxAddress; //!< the address of the current sender hop
+      Mac48Address m_curRxAddress; //!< the address of the current receiver hop
       Time     m_duration;         //!< the duration of the transmission
       Time     m_creationTime ;    //!< the creation time of the packet
       Time     m_arrivalTime;      //!< the time for finishing reception
       FrameType    m_kind;         //!< the kind of the frame
       uint32_t m_originalPkt;      //!< the origial packet uid
+      uint16_t m_protocolNum;      //!< the protocol number 
 
 };
 

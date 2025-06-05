@@ -9,6 +9,7 @@
 
 #include "cognitive-mac-constants.h"
 #include "mac-frames.h"
+#include "cognitive-routing-unite.h"
 
 #include <ns3/drop-tail-queue.h>
 #include <ns3/address.h>
@@ -46,7 +47,6 @@ typedef Callback<bool,Ptr<Packet>> PhyTxStartCallback;
 typedef Callback<double,uint16_t> SensingResultCallback;
 typedef Callback<void> StopWorkCallback;
 typedef Callback<double> GetRemainingEnergyCallback;
-typedef Callback<void,Ptr<Packet>> ReceiveCtrlPacketCallback;
 typedef Callback<void,uint16_t> CurrentDataChannelCallback;
 
     class CognitiveGeneralNetDevice : public NetDevice
@@ -60,7 +60,7 @@ typedef Callback<void,uint16_t> CurrentDataChannelCallback;
         static TypeId GetTypeId();
 
         CognitiveGeneralNetDevice();                 // Construcotr
-        ~CognitiveGeneralNetDevice() override;       // Deconstructor
+        ~CognitiveGeneralNetDevice() override;       // Destructor
 
         /**
          * set the queue which is going to be used by this device
@@ -142,13 +142,6 @@ typedef Callback<void,uint16_t> CurrentDataChannelCallback;
          * @param c the callback
          */
         void SetGetRemainingEnergyCallback(GetRemainingEnergyCallback c);
-
-        /**
-         * @brief Set the reception of 
-         * a ctrl callback 
-         * @param c the callback
-         */
-        void SetReceiveCtrlPacketCallback(ReceiveCtrlPacketCallback c);
 
         /**
          * @brief Set the current data
@@ -286,7 +279,7 @@ typedef Callback<void,uint16_t> CurrentDataChannelCallback;
          * @brief Get the cluster info
          * to set the CADC and CBDC
          */
-        void SetClusterInfo(uint16_t CADC , uint16_t CBDC);
+        void SetClusterInfo(uint16_t CADC , uint16_t CBDC , Address CHaddress);
 
         /**
          * @brief allow or forbid
@@ -305,6 +298,19 @@ typedef Callback<void,uint16_t> CurrentDataChannelCallback;
          *  for control
          */
         void SetDeviceKind(bool b);
+
+        /**
+         * @brief Sending a frame
+         * @param frame 
+         */
+        void SendFrame(Ptr<MacDcfFrame> frame);
+
+        /**
+         * @brief Set the routing 
+         * unite
+         * @param routingUnite 
+         */
+        void SetRoutingUnite(Ptr<CognitiveRoutingUnite> routingUnite);
 
 
 
@@ -358,35 +364,36 @@ typedef Callback<void,uint16_t> CurrentDataChannelCallback;
         SensingResultCallback m_sensingResult;        //!< the sensing result 
         StopWorkCallback m_stopWork;                 //!< stop work of the phy     
         GetRemainingEnergyCallback m_remainingEnergy; //!< get the remaining energy callback 
-        ReceiveCtrlPacketCallback m_receiveCtrlPacket; //!< receive ctrl packet callback
         CurrentDataChannelCallback m_currentDataChannel; //!< set the current data channel
         TracedCallback<> m_linkChangeCallbacks;       //!< the link change Callback;
-        uint32_t m_ifIndex;            // !< the interface Index
-        mutable uint32_t m_mtu;        // !< NetDevice MTU
-        bool m_linkUp;                 // !< true if link is up
-        CognitiveState m_state;        // !< state of the net device 
-        Ptr<MacDcfFrame> m_data;       // !< the data packet being sent
-        Ptr<MacDcfFrame> m_rdata;      // !< the data packet being recerived
-        Ptr<Object> m_phy;             // !< the physical layer object
+        uint32_t m_ifIndex;                 // !< the interface Index
+        mutable uint32_t m_mtu;             // !< NetDevice MTU
+        bool m_linkUp;                      // !< true if link is up
+        CognitiveState m_state;             // !< state of the net device 
+        Ptr<MacDcfFrame> m_data;            // !< the data packet being sent
+        Ptr<MacDcfFrame> m_rdata;           // !< the data packet being recerived
+        Ptr<CognitiveRoutingUnite> m_routingUnite;//!< the routing unite connect to the device
+        Ptr<Object> m_phy;                  // !< the physical layer object
         Ptr<UniformRandomVariable> m_rv ;   // random variable for the backoff process
-        bool m_IhaveChannel;           // !< boolean to tell that I have cluster
-        uint16_t m_CW;                  //!< the contention window size
-        uint16_t m_CADC;                //!< the common active data channel 
-        uint16_t m_CBDC;                //!< the common active data channel
-        double m_threshold;            //!< threshold for the carrier sense 
-        DataRate m_rate;               //!< phy date rate
-        uint32_t m_backOffSlots;       //!< number of back off slots
+        bool m_IhaveChannel;                // !< boolean to tell that I have cluster
+        uint16_t m_CW;                      //!< the contention window size
+        uint16_t m_CADC;                    //!< the common active data channel 
+        uint16_t m_CBDC;                    //!< the common active data channel
+        double m_threshold;                 //!< threshold for the carrier sense 
+        DataRate m_rate;                    //!< phy date rate
+        uint32_t m_backOffSlots;            //!< number of back off slots
         inline static std::map<uint32_t,Ptr<MacDcfFrame>> m_map;  //!< the map for the packets sent
         inline static std::set<uint32_t> m_dataSet;     //!< the set containing the packets send from protocol
         double m_senseRes;          
-        bool m_currentTX ;              //!< boolean to know if we have a packet to transmit now 
-        bool m_backoff;                 //!< boolean to know that we are in backoff phase 
-        bool m_dataDevice;              //!< boolean to indicate if the net device is for data or control
+        bool m_currentTX ;                  //!< boolean to know if we have a packet to transmit now 
+        bool m_backoff;                     //!< boolean to know that we are in backoff phase 
+        bool m_dataDevice;                  //!< boolean to indicate if the net device is for data or control
         inline static uint32_t genPackets = 0;
         inline static uint32_t recPackets = 0;
-        EventId m_sendPhase ;              //!< time to retry the transmission
-        EventId m_nav ;                //!< virtual carrier sense timers
+        EventId m_sendPhase ;               //!< time to retry the transmission
+        EventId m_nav ;                     //!< virtual carrier sense timers
         inline static double latency = 0.0; //!< the total latency over all packets
+        Address m_CHaddress;                //!< the address of the cluster head     
         
     };
 

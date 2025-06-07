@@ -577,7 +577,7 @@ CognitiveGeneralNetDevice::SendFrom(Ptr<Packet> packet,
 {
     NS_LOG_FUNCTION(packet << src << dest << protocolNumber);
     m_routingUnite->SendPacket(packet,src,dest,protocolNumber);
-   // std::cout<< m_node->GetId() << " " << Simulator::Now() << " " << packet << " " << sendOk << std::endl;
+    //std::cout<< m_node->GetId() << " " << Simulator::Now() << " " << packet->GetUid() << std::endl;
     return true;
 }
 
@@ -585,14 +585,12 @@ void
 
 CognitiveGeneralNetDevice::SendFrame(Ptr<MacDcfFrame> frame)
 {
-        // If the device is idle, transmission starts immediately. Otherwise,
+    // If the device is idle, transmission starts immediately. Otherwise,
     // the transmission will be started by NotifyTransmissionEnd
     //
-
     NS_LOG_LOGIC(this << " state=" << m_state);
     if (m_queue->empty() && !m_sendPhase.IsPending() && !m_currentTX && m_state!=RX && m_IhaveChannel)
     {
-       // std::cout << m_node->GetId()<< " going to send directly without queueing " << packet->GetUid() << '\n';
         NS_LOG_LOGIC("new packet is head of queue, starting TX immediately");
         m_currentTX = true;
         m_data = frame;

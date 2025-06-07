@@ -283,6 +283,7 @@ typedef Callback<void,uint16_t,uint16_t,Address> SetCommonDataChannelsCallback;
           double m_CFmax;                                   //!< the channel fitness max value
           double m_Emax;                                    //!< the maximum energy of a node
           double m_Etta;                                    //!< the percentile threshold
+          double m_curEnergy;                               //!< the current energy
 
   
           bool m_ImClusterHead;                             //!< boolean to know if I'm a cluster head

@@ -178,7 +178,7 @@ CognitiveNetDeviceHelper::Install(NodeContainer c) const
         routingUnite->SetAddress(datadev->GetAddress());
         
         routingUnite->SetSendDataFrameCallback(MakeCallback(&CognitiveGeneralNetDevice::SendFrame,datadev));
-        routingUnite->SetSendCtrlFrameCallback(MakeCallback(&CognitiveGeneralNetDevice::SendFrame,datadev));
+        routingUnite->SetSendCtrlFrameCallback(MakeCallback(&CognitiveGeneralNetDevice::SendFrame,controldev));
         routingUnite->SetCtrlAppSendPacketCallback(
             MakeCallback(&CognitiveControlApplication::ReceiveControlMsg,ctrlApp));
 

@@ -23,8 +23,8 @@ CognitiveControlApplication::CognitiveControlApplication():
       m_NNmax(10),m_NRCmax(10),
       m_beta1(0.25),m_beta2(0.25),
       m_beta3(0.25),m_beta4(0.25),
-      m_CFmax(1.5),m_Emax(150),m_Etta(0.5),
-      m_ImClusterHead(false)
+      m_CFmax(20),m_Emax(150),m_Etta(0.5),
+      m_curEnergy(150),m_ImClusterHead(false)
 {
       m_availableChannelQvalues = new std::map<uint16_t,double>();
       m_neighborsInfo = new std::map<Address,std::set<uint16_t>>();
@@ -162,17 +162,18 @@ CognitiveControlApplication::SendMsg(CognitiveControlMessage::Kind kind)
             
             NS_ASSERT_MSG(!m_getRemainingEnergyCallback.IsNull(),"you haven't set the get energy callback");
             Ptr<CognitiveControlMessage> msg = CreateObject<CognitiveControlMessage>();
-            double energy = m_getRemainingEnergyCallback();
+            m_curEnergy = m_getRemainingEnergyCallback();
             Ptr<Packet> pkt = Create<Packet>(NCCIsize);
             msg->SetPacket(pkt);
             msg->SetChannelQualityMap(m_availableChannelQvalues);
             msg->SetNeighborNodeConnectivityMap(m_neighborsInfo);
             msg->SetNeighborClusterReachabilityMap(m_neighborCluster);
             msg->SetCreationTime(Simulator::Now());
-            msg->SetEnergy(energy);
+            msg->SetEnergy(m_curEnergy);
             msg->SetDestinationAddress(Broadcast);
             msg->SetSourceAddress(m_address);
             msg->SetKind(CognitiveControlMessage::NCCI);
+            msg->SetNodeId(m_node->GetId());
             msgMap[pkt->GetUid()] = msg ;
             m_controlDevice->Send(pkt,Broadcast,m_protocol);
             Simulator::Schedule(m_SendNCCIPeriod,&CognitiveControlApplication::SendMsg,this,
@@ -181,7 +182,7 @@ CognitiveControlApplication::SendMsg(CognitiveControlMessage::Kind kind)
       else if(kind==CognitiveControlMessage::CH_ANM)
       {
             
-            std::cout << m_node->GetId() << " going to send CH_ANM \n";
+        //    std::cout << m_node->GetId() << " going to send CH_ANM \n";
             
             NS_ASSERT_MSG(m_ImClusterHead,"going to send CH_ANM while not a CH");
             Ptr<CognitiveControlMessage> msg = CreateObject<CognitiveControlMessage>();
@@ -213,6 +214,7 @@ CognitiveControlApplication::SendMsg(CognitiveControlMessage::Kind kind)
       else if(kind==CognitiveControlMessage::JOIN_REQ)
       {
             if(m_CHaddress==m_address){return;}
+            
             Ptr<CognitiveControlMessage> msg = CreateObject<CognitiveControlMessage>();
             Ptr<Packet> pkt = Create<Packet>(JOIN_REQsize);
             msg->SetPacket(pkt);
@@ -243,6 +245,7 @@ CognitiveControlApplication::ReceiveMsg(Ptr<CognitiveControlMessage> msg)
       {
       case(CognitiveControlMessage::NCCI):
       {
+            std::cout  << m_node->GetId() - 11 << " I have received an NCCI message sent from " << msg->GetNodeId() - 11 << '\n';
             Address src = msg->GetSourceAddress();
             m_msgs[src] = msg;
             m_ncci_Expiracy[src].Cancel();
@@ -270,8 +273,8 @@ CognitiveControlApplication::ReceiveMsg(Ptr<CognitiveControlMessage> msg)
             m_ch_anm_Expiracy[CHaddress] = 
             Simulator::Schedule(m_ctrlMsgDuration,
                               &CognitiveControlApplication::DeleteCtrlMsg,this,CHaddress,kind);
-            std::cout << m_address << " I have received a CH_ANM " << Simulator::Now() 
-             << " Sent from " << msg->GetSourceAddress() << " " << msg->GetPacket()->GetUid() << '\n'; 
+            std::cout << m_node->GetId() << " I have received a CH_ANM " << Simulator::Now() 
+             << " Sent from " << msg->GetSourceAddress() << '\n';
       
             break;
       }
@@ -281,8 +284,8 @@ CognitiveControlApplication::ReceiveMsg(Ptr<CognitiveControlMessage> msg)
                   Simulator::Schedule(m_ctrlMsgDuration,&CognitiveControlApplication::DeleteCtrlMsg,this,
                                                         msg->GetSourceAddress(),kind);
                                                         
-            std::cout << m_address << " I have received a JOIN_REQ " << Simulator::Now() 
-             << " Sent from " << msg->GetSourceAddress() << " " << msg->GetPacket()->GetUid() << '\n'; 
+            std::cout << m_node->GetId() << " I have received a JOIN_REQ " << Simulator::Now() 
+             << " Sent from " << msg->GetSourceAddress() << '\n'; 
             break;
       case(CognitiveControlMessage::GH_ANM):
             break;
@@ -349,9 +352,11 @@ void
 
 CognitiveControlApplication::UpdateNeighborsInfoTables()
 {
+     // std::cout << m_node->GetId() << " ";
       (*m_neighborsInfo).clear();
       for(auto& i : (m_msgs))
       {
+      //      std::cout << i.first << " ";
             Address tempAd = i.first;
             ChannelQuality temCQ = i.second->GetChannelQualityMap();
             std::set<uint16_t> avCH ;
@@ -361,6 +366,7 @@ CognitiveControlApplication::UpdateNeighborsInfoTables()
             }
             (*m_neighborsInfo).insert({tempAd,avCH});      
       }
+    //  std::cout << '\n';
       m_updateneighbors = Simulator::Schedule(m_updateTables,
                                               &CognitiveControlApplication::UpdateNeighborsInfoTables,this);
 }
@@ -380,21 +386,16 @@ CognitiveControlApplication::CalculateVvalues()
       m_Vvalues.clear();
       for(auto& i : m_msgs)
       {
+         //   std:: cout << i.first << " ";
             m_Vvalues[i.first] = DoCaculateVvalue(i.second);
       }
-      double energy = m_getRemainingEnergyCallback();
       Ptr<CognitiveControlMessage> msg = CreateObject<CognitiveControlMessage>();
       msg->SetChannelQualityMap(m_availableChannelQvalues);
       msg->SetNeighborNodeConnectivityMap(m_neighborsInfo);
       msg->SetNeighborClusterReachabilityMap(m_neighborCluster);
-      msg->SetEnergy(energy);
+      msg->SetEnergy(m_curEnergy);
+    //  std::cout << m_address << " ";
       m_Vvalues[m_address] = DoCaculateVvalue(msg);
-   /*   std::cout << m_dataDevice->GetNode()->GetId() << " " << Simulator::Now() << "\n";
-      for(auto& i : m_Vvalues)
-      {
-            std::cout << i.first << " " << i.second << "\n";
-      }
-    */
       m_updateVtable = Simulator::Schedule(m_updateTables,
                                            &CognitiveControlApplication::CalculateVvalues,this);
 }
@@ -428,6 +429,7 @@ CognitiveControlApplication::DoCaculateVvalue(Ptr<CognitiveControlMessage> msg)
             }
             CF+= (*msg->GetChannelQualityMap())[i]*Nkj;
       }
+     // std::cout << E << " " << CF << " " << NRC << " " << NN << std::endl;
       double V = m_beta1*(E/m_Emax) + m_beta2*(CF/m_CFmax) + m_beta3*(NRC/m_NRCmax) + m_beta4*(NN/m_NNmax);
       return V; 
 }
@@ -441,14 +443,15 @@ CognitiveControlApplication::ChooseMyCluseterCandidate()
       Address address;
       for(auto& i : m_Vvalues)
       {
+          //  std::cout << i.first << ' ' << i.second << '\n';
             if(mx < i.second)
             {
                   mx = i.second;
                   address = i.first;
-            }
+            }    
       }
       m_CHCaddress = address;
-     // std::cout << m_node->GetId() << " " << m_CHCaddress << std::endl;
+   //   std::cout << m_node->GetId() << " " << m_CHCaddress << std::endl;
       if(m_CHCaddress!=m_address)
       {
             Simulator::ScheduleNow(&CognitiveControlApplication::SendMsg,this,
@@ -500,7 +503,7 @@ CognitiveControlApplication::EvaluateCH_REQs()
             }
             if(channels.size()>=1){m_CADC = (*channels.rbegin()).second; channels.erase(*channels.rbegin());}
             if(channels.size()>=1){m_CBDC = (*channels.rbegin()).second; channels.erase(*channels.rbegin());}
-            std::cout << m_node->GetId() << " "  << m_CADC << " " << m_CBDC << std::endl;
+          //  std::cout << m_node->GetId() << " "  << m_CADC << " " << m_CBDC << std::endl;
             m_CHaddress = m_address;
             m_ImClusterHead = true;
             if(!m_setCommonDataChannelsCallback.IsNull())
@@ -528,7 +531,7 @@ void
 
 CognitiveControlApplication::EvaluateCH_ANMs()
 {
-      std::cout << m_node->GetId() << " going to evalute CH_ANMs \n";
+     // std::cout << m_node->GetId() << " going to evalute CH_ANMs \n";
       if(m_ImClusterHead)
       {
             return ;
@@ -548,13 +551,14 @@ CognitiveControlApplication::EvaluateCH_ANMs()
       {
             if(!m_setCommonDataChannelsCallback.IsNull())
             {
-                  std::cout << " my cluster head is " << m_CHaddress << '\n'; 
+                //  std::cout << " my cluster head is " << m_CHaddress << '\n'; 
                   m_routingUnite->SetCluster(m_CHaddress);
                   m_setCommonDataChannelsCallback(m_CADC,m_CBDC,m_CHaddress);
             }
+            
+            Simulator::ScheduleNow(&CognitiveControlApplication::SendMsg,this,
+                                   CognitiveControlMessage::JOIN_REQ);
       }
-      Simulator::ScheduleNow(&CognitiveControlApplication::SendMsg,this,
-                              CognitiveControlMessage::JOIN_REQ);
       Simulator::Schedule(m_clusterAge,&CognitiveControlApplication::EvaluateCH_ANMs,this);
 }
 

@@ -210,6 +210,22 @@ class CognitiveControlMessage : public Object
        */
       uint16_t GetCBDC();
 
+      /**
+       * @brief Set the node
+       * of the creation
+       * @param ID the Id
+       * of the node 
+       */
+      void SetNodeId(uint32_t ID);
+
+      /**
+       * @brief return the
+       * ID of the node
+       * of creation
+       * @return ID number
+       */
+      uint32_t GetNodeId();
+
       protected:
       void DoDispose() override;
       
@@ -230,6 +246,8 @@ class CognitiveControlMessage : public Object
 
       uint16_t m_CADC ;                 //!< the index of the common active data channel
       uint16_t m_CBDC ;                 //!< the index of the common backup data channel
+      
+      uint32_t m_nodeId ;               //!< the ID of the creator node
 
       CognitiveControlMessage::Kind m_kind;            //!< the kind of the message
 

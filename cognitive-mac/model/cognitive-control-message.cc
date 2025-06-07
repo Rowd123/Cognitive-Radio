@@ -206,5 +206,19 @@ CognitiveControlMessage::GetCBDC()
     return m_CBDC;
 }
 
+void
+
+CognitiveControlMessage::SetNodeId(uint32_t ID)
+{
+    m_nodeId = ID;
+}
+
+uint32_t 
+
+CognitiveControlMessage::GetNodeId()
+{
+    return m_nodeId;
+}
+
 
 }

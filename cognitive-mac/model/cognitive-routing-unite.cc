@@ -51,7 +51,7 @@ void
 
 CognitiveRoutingUnite::SendPacket(Ptr<Packet> packet, const Address source, const Address dest, uint16_t protocolNumber)
 {
-
+  //  std::cout << source << " " << dest << '\n';
     Ptr<MacDcfFrame> frame = CreateObject<MacDcfFrame>();
     frame->SetPacket(packet);
     frame->SetOriginalSender(Mac48Address::ConvertFrom(source));
@@ -74,6 +74,7 @@ CognitiveRoutingUnite::SendPacket(Ptr<Packet> packet, const Address source, cons
             frame->SetCurrentReceiver(Mac48Address::ConvertFrom(m_CHaddress));
         }
     }
+    this->SendFrame(frame);
 }
 
 void
@@ -86,7 +87,7 @@ CognitiveRoutingUnite::ReceiveFrame(Ptr<MacDcfFrame> frame)
     {
         if(currentReceiver==m_address || currentReceiver==Broadcast)
         {
-            NS_ASSERT_MSG(m_ctrlAppSendPacketCallback.IsNull(),"the send packet for the ctrl app isn't set");
+            NS_ASSERT_MSG(!m_ctrlAppSendPacketCallback.IsNull(),"the send packet for the ctrl app isn't set");
             m_ctrlAppSendPacketCallback(frame->GetPacket());
         }
         else

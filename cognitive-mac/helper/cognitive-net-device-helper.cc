@@ -216,6 +216,9 @@ CognitiveNetDeviceHelper::Install(NodeContainer c) const
         datadev->SetPhy(dataphy);
         controldev->SetPhy(controldev);
 
+        datadev->SetDeviceKind(true);
+        controldev->SetDeviceKind(false);
+
         dataphy->SetChannelsInfo(m_numOfChannels,m_numBins,0);
         controlphy->SetChannelsInfo(m_numOfChannels,m_numBins,m_numOfChannels-1);
 
@@ -269,6 +272,8 @@ CognitiveNetDeviceHelper::Install(NodeContainer c) const
             MakeCallback(&CognitiveGeneralNetDevice::NotifyReceptionEndOk, datadev));
         dataphy->SetGenericPhyTxAbortCallback(
             MakeCallback(&CognitiveGeneralNetDevice::NotifyTransmissionAbort,datadev));
+        dataphy->SetGenericPhyRxEndErrorCallback(
+            MakeCallback(&CognitiveGeneralNetDevice::NotifyReceptionEndError,datadev));
         
 
         controlphy->SetGenericPhyTxEndCallback(
@@ -279,6 +284,8 @@ CognitiveNetDeviceHelper::Install(NodeContainer c) const
             MakeCallback(&CognitiveGeneralNetDevice::NotifyReceptionEndOk, controldev));
         controlphy->SetGenericPhyTxAbortCallback(
             MakeCallback(&CognitiveGeneralNetDevice::NotifyTransmissionAbort,controldev));
+        controlphy->SetGenericPhyRxEndErrorCallback(
+            MakeCallback(&CognitiveGeneralNetDevice::NotifyReceptionEndError,controldev));
 
         datadev->SetPhyStartTxCallback(MakeCallback(&CognitivePhyDevice::StartTx, dataphy));
         datadev->SetCcaResultCallback(MakeCallback(&CognitivePhyDevice::CarrierSense,dataphy));

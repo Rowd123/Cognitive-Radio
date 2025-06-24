@@ -151,6 +151,13 @@ CognitiveRoutingUnite::SetCluster(Address address)
 
 void
 
+CognitiveRoutingUnite::EnableRouting(bool b)
+{
+    m_routingEnabled = b ; 
+}
+
+void
+
 CognitiveRoutingUnite::UnSetCluster()
 {
     m_IhaveCluster = false;

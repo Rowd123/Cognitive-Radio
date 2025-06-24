@@ -222,12 +222,17 @@ typedef Callback<void,uint16_t,uint16_t,Address> SetCommonDataChannelsCallback;
            void CalculateVvalues();
 
            /**
+            * @brief choose the GateWay 
+            * node 
+            */
+           void ChooseGateways();
+
+           /**
             * @brief calculate the 
             * V value for a one node
             * @param address of the node
             */
-           double DoCaculateVvalue(Ptr<CognitiveControlMessage> msg);
-          
+           double DoCaculateVvalue(Ptr<CognitiveControlMessage> msg);          
           
           Ptr<SpectrumControlModule> m_spectrumControlModule;  //!< the spectrum control module 
           Ptr<NetDevice> m_dataDevice;                         //!< the net device 
@@ -258,9 +263,11 @@ typedef Callback<void,uint16_t,uint16_t,Address> SetCommonDataChannelsCallback;
           std::map<Address,EventId> m_ncci_Expiracy;           //!< the event of the expiract of the NCCI message
           std::map<Address,EventId> m_ch_anm_Expiracy;         //!< the event of the expiracy of the CH_ANM message 
           std::map<Address,EventId> m_ch_req_Expiracy;         //!< the event of the expiracy of the CH_REQ message
+          std::map<Address,EventId> m_gh_anm_Expiracy;         //!< the event of the expiracy of the GH_ANM message
+          std::map<Address,EventId> m_members_Expiracy;       //!< the event of the expiracy of the JOIN_REQ message
           std::map<Address,Ptr<CognitiveControlMessage>> m_msgs;//!< a map containing received messagess
           std::map<Address,double> m_Vvalues;                  //!< a map containig the Vvalues of the neighboring nodes
-          std::map<Address,EventId> m_members_Expiracy;       //!< the event of the expiracy of the JOIN_REQ message                      
+          std::map<Address,Address> m_gateways;                //!< a map containing the gateways of the cluster head 
 
           std::vector<double> m_channelsQtable;                //!< the Q table of the channels
 
@@ -286,7 +293,8 @@ typedef Callback<void,uint16_t,uint16_t,Address> SetCommonDataChannelsCallback;
           double m_curEnergy;                               //!< the current energy
 
   
-          bool m_ImClusterHead;                             //!< boolean to know if I'm a cluster head
+          bool m_ImClusterHead;                             //!< boolean to know if this node is cluster head
+          bool m_ImGateway;                                 //!< boolean to know if this node is gateway
     };
 }
 

@@ -12,6 +12,7 @@
 
 #include <ns3/object.h>
 #include <ns3/data-rate.h>
+#include <map>
 
 namespace ns3
 {
@@ -77,6 +78,13 @@ typedef Callback<void,Ptr<Packet>> SendPacketCallback;
             void SetDataRate(const DataRate dataRate);
 
             /**
+             * @brief Enable Routing
+             * @param b true if routint
+             * is enabled
+             */
+            void EnableRouting(bool b);
+            
+            /**
              * @return number of created
              * packets 
              */
@@ -118,7 +126,30 @@ typedef Callback<void,Ptr<Packet>> SendPacketCallback;
              */
             void SetCtrlAppSendPacketCallback(SendPacketCallback c);
 
-        
+            /**
+             * @brief send route discovery
+             * message for a packet
+             * @param address the wanted
+             * address
+             */
+            void RouteDiscovery(Address address);
+
+            /**
+             * @brief send route discovery
+             * @param address the wanted
+             * address
+             */
+            void ReceiveRouteDiscoveryRequest(Address address);
+            
+            /**
+             * @brief Calculate the link
+             * delay between this node and
+             * the next one
+             * @param address the next
+             * node address
+             */
+            double CalculateLinkDelay(Address address) ;
+            
         protected:
             void DoDispose() override;
 
@@ -134,12 +165,11 @@ typedef Callback<void,Ptr<Packet>> SendPacketCallback;
 
             DataRate m_dataRate;        //!< the data rate of the PHY
             
-            SendFrameCallback m_dataFrameCallback;
-            SendFrameCallback m_ctrlFrameCallback;
-            SendPacketCallback m_ctrlAppSendPacketCallback;
+            SendFrameCallback m_dataFrameCallback;  //!< sending packet via the data device
+            SendFrameCallback m_ctrlFrameCallback;  //!< sending packet via the control device
+            SendPacketCallback m_ctrlAppSendPacketCallback; //!< sending the packet to contorl app  
 
-
-            
+            std::map<Address,Address> m_routingTable;       //!< the routing table
 
     };
 }

@@ -25,12 +25,18 @@
     const uint32_t RTSsize = 44;                //!< the size of the rts packet in bytes
     const uint32_t CTSsize = 38;                //!< the size of the cts packet in bytes
     const uint32_t ACKsize = 38;                //!< the size of the ack packet in bytes
-    const Address Broadcast = (Mac48Address::GetBroadcast()).ConvertTo();     //!< broadcast address
     const uint32_t NCCIsize = 500 ;             //!< the size of the NCCI message
     const uint32_t CH_ANMsize = 50 ;            //!< the size of CH_ANM message
     const uint32_t CH_REQsize = 50 ;            //!< the size of the CH_REQ message
     const uint32_t JOIN_REQsize = 50 ;          //!< the size of JOIN_REQ message
     const uint32_t GH_ANMsize = 50 ;            //!< the size of the GH_ANM message 
+    const uint32_t RReqSize = 50 ;              //!< the size of the RReq message
+    const uint32_t RRepSize = 50 ;              //!< the size of the RRep message
+    const uint32_t RErrSize = 50 ;              //!< the size of the RErr message
+    const uint32_t DErrSize = 50 ;              //!< the size of the DErr message
+
+    const Address Broadcast = (Mac48Address::GetBroadcast()).ConvertTo();     //!< broadcast address
+    
     /**
      * the state of the net device
      */
@@ -41,6 +47,15 @@
       RX,         //!< Receiving State
       SENSING     //!< sensing the channel
    };
+
+   enum RoutingMsgType
+   {
+         RReq,   //!< Route Request msg
+         RRep,   //!< Route Reply msg
+         RErr,   //!< error msg to state broken link
+         DErr    //!< error msg to state unreachable destination
+   };
+
    enum FrameType
    {
      DATA,  //!< data

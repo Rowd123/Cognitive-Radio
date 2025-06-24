@@ -22,6 +22,7 @@ build_lib(
                  model/cognitive-spectrum-interference.cc
                  model/cognitive-control-message.cc
                  model/cognitive-routing-unite.cc
+                 model/cognitive-routing-messages.cc
                  helper/cognitive-device-energy-model-helper.cc
                  helper/cognitive-net-device-helper.cc
                  helper/cognitive-mac-helper.cc
@@ -36,6 +37,7 @@ build_lib(
                  model/cognitive-spectrum-interference.h
                  model/cognitive-control-message.h
                  model/cognitive-routing-unite.h
+                 model/cognitive-routing-messages.h
                  helper/cognitive-net-device-helper.h
                  helper/cognitive-device-energy-model-helper.h
                  helper/cognitive-mac-helper.h

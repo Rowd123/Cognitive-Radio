@@ -423,7 +423,7 @@
              m_interference.StartRx(p, rxParams->psd);
              NS_LOG_LOGIC(this << " scheduling EndRx with delay " << rxParams->duration); 
              m_process.Cancel();
-             m_process = Simulator::Schedule(rxParams->duration, &CognitivePhyDevice::EndRx, this);
+             Simulator::Schedule(rxParams->duration, &CognitivePhyDevice::EndRx, this);
          }
      }
      else // rxParams == 0

@@ -33,7 +33,6 @@
     const uint32_t RReqSize = 50 ;              //!< the size of the RReq message
     const uint32_t RRepSize = 50 ;              //!< the size of the RRep message
     const uint32_t RErrSize = 50 ;              //!< the size of the RErr message
-    const uint32_t DErrSize = 50 ;              //!< the size of the DErr message
 
     const Address Broadcast = (Mac48Address::GetBroadcast()).ConvertTo();     //!< broadcast address
     
@@ -52,8 +51,7 @@
    {
          RReq,   //!< Route Request msg
          RRep,   //!< Route Reply msg
-         RErr,   //!< error msg to state broken link
-         DErr    //!< error msg to state unreachable destination
+         RErr,   //!< error msg to state route error
    };
 
    enum FrameType

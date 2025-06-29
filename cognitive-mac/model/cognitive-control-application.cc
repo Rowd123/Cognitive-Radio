@@ -689,4 +689,18 @@ CognitiveControlApplication::GetCognitiveRoutingUnite()
       return m_routingUnite;
 }
 
+bool 
+
+CognitiveControlApplication::IsClusterMember(Address address)
+{
+      if(address==m_address)
+      {
+            return true;
+      }
+      else
+      {
+            return m_members_Expiracy.count(address);
+      }
+}
+
 }

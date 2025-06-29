@@ -232,7 +232,18 @@ typedef Callback<void,uint16_t,uint16_t,Address> SetCommonDataChannelsCallback;
             * V value for a one node
             * @param address of the node
             */
-           double DoCaculateVvalue(Ptr<CognitiveControlMessage> msg);          
+           double DoCaculateVvalue(Ptr<CognitiveControlMessage> msg);     
+           
+           /**
+            * @brief used by routing
+            * unite to know if the 
+            * address is a cluster 
+            * member
+            * @param address of the node
+            * @return true if the node
+            * is a cluster member
+            */
+           bool IsClusterMember(Address address);
           
           Ptr<SpectrumControlModule> m_spectrumControlModule;  //!< the spectrum control module 
           Ptr<NetDevice> m_dataDevice;                         //!< the net device 

@@ -8,6 +8,7 @@
 #define COGNITIVE_ROUTING_MESSAGES
 
 #include "cognitive-mac-constants.h"
+#include "mac-frames.h"
 
 
 #include <ns3/object.h>
@@ -19,7 +20,7 @@
 namespace ns3
 {
 
-    class CognitiveRoutingMessage : public Object
+    class CognitiveRoutingMessage : public MacDcfFrame
     {
         public:
             CognitiveRoutingMessage();              //!< the constructor
@@ -32,18 +33,6 @@ namespace ns3
             static TypeId GetTypeId();
             
             /**
-             * @brief Set the source address
-             * @param address of the source
-             */
-            void SetSourceAddress(Address address);
-
-            /**
-             * @brief Set the destination address
-             * @param address of the destination 
-             */
-            void SetDestinationAddress(Address address);
-
-            /**
              * @brief Set the required address
              * @param address of the required
              * node
@@ -55,12 +44,6 @@ namespace ns3
              * @param type the type
              */
             void SetMsgType(RoutingMsgType type);
-
-            /**
-             * @brief Set the packet
-             * @param pkt the packet
-             */
-            void SetPacket(Ptr<Packet> pkt);
             
             /**
              * @brief Set the link 
@@ -69,20 +52,6 @@ namespace ns3
              * representing the link
              */
             void SetErrorLink(std::pair<Address,Address> link);
-
-            /**
-             * @brief Get the Source
-             * Address
-             * @return address
-             */
-            Address GetSourceAddress();
-
-            /**
-             * @brief Get the destination 
-             * address
-             * @return address
-             */
-            Address GetDestinationAddress();
 
             /**
              * @brief Get the address
@@ -99,29 +68,29 @@ namespace ns3
             RoutingMsgType GetMsgType();
             
             /**
-             * @brief Get the packet
-             * @return the packet
-             */
-            Ptr<Packet> GetPacket();
-
-            /**
              * @brief Get the link with 
              * the error
              */
             std::pair<Address,Address> GetErrorLink();
 
+            /**
+             * @brief set the total delay
+             * of the path
+             * @param d the delay
+             */
+            void SetDelay(double d);
 
-            
+            /**
+             * @brief Get the total
+             * delay of the path
+             * @return delay
+             */
+            double GetDelay();
 
-        protected:
-            void DoDispose() override;
 
         private:
 
         double TotDelay; //!< the total delay of the link
-
-        Address m_fromAddress;      //!< the destination address
-        Address m_toAddress;        //!< the source address
         Address m_requiredAddress;  //!< the address of the requested node
 
         RoutingMsgType m_type;      //!< the message type

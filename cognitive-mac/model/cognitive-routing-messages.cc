@@ -16,7 +16,8 @@ NS_LOG_COMPONENT_DEFINE("CognitiveRoutingMessage");
   
 NS_OBJECT_ENSURE_REGISTERED(CognitiveRoutingMessage);
 
-CognitiveRoutingMessage::CognitiveRoutingMessage()
+CognitiveRoutingMessage::CognitiveRoutingMessage() :
+    TotDelay(0.0)
 {
 
 }
@@ -40,37 +41,9 @@ CognitiveRoutingMessage::GetTypeId()
 
 void 
 
-CognitiveRoutingMessage::DoDispose()
-{
-    Object::DoDispose();
-}
-
-void 
-
-CognitiveRoutingMessage::SetSourceAddress(Address address)
-{
-    m_fromAddress = address;
-}
-
-void 
-
-CognitiveRoutingMessage::SetDestinationAddress(Address address)
-{
-    m_toAddress = address;
-}
-
-void 
-
 CognitiveRoutingMessage::SetMsgType(RoutingMsgType type)
 {
     m_type = type;
-}
-
-void 
-
-CognitiveRoutingMessage::SetPacket(Ptr<Packet> pkt)
-{
-    m_pkt = pkt;
 }
 
 void 
@@ -85,22 +58,6 @@ void
 CognitiveRoutingMessage::SetRequiredAddress(Address address)
 {
     m_requiredAddress = address;
-}
-
-
-
-Address
-
-CognitiveRoutingMessage::GetSourceAddress()
-{
-    return m_fromAddress;
-}
-
-Address
-
-CognitiveRoutingMessage::GetDestinationAddress()
-{
-    return m_toAddress;
 }
 
 Address 
@@ -124,6 +81,18 @@ CognitiveRoutingMessage::GetErrorLink()
     return m_errorLink;
 }
 
+void
 
+CognitiveRoutingMessage::SetDelay(double d)
+{
+    TotDelay = d; 
+}
+
+double
+
+CognitiveRoutingMessage::GetDelay()
+{
+    return TotDelay;
+}
 
 }

@@ -8,18 +8,19 @@
 #define COGNITIVE_ROUTING_UNITE
 
 
-#include "mac-frames.h"
+#include "cognitive-routing-messages.h"
 
 #include <ns3/object.h>
-#include <ns3/data-rate.h>
+
 #include <map>
+#include <vector>
 
 namespace ns3
 {
 
 typedef Callback<void,Ptr<MacDcfFrame>> SendFrameCallback;
 typedef Callback<void,Ptr<Packet>> SendPacketCallback;
-
+typedef Callback<bool,Address> IsClusterMemberCallback;
     class CognitiveRoutingUnite : public Object
     {
         public:
@@ -127,28 +128,86 @@ typedef Callback<void,Ptr<Packet>> SendPacketCallback;
             void SetCtrlAppSendPacketCallback(SendPacketCallback c);
 
             /**
-             * @brief send route discovery
-             * message for a packet
+             * @brief set the callback
+             * to check if the node 
+             * is cluster member
+             * @param c the callback
+             */
+            void SetIsClusterMemberCallback(IsClusterMemberCallback c);
+
+            /**
+             * @brief start the route
+             * discovery process
              * @param address the wanted
              * address
              */
-            void RouteDiscovery(Address address);
+            void StartRouteDiscovery(Address address);
 
             /**
              * @brief send route discovery
-             * @param address the wanted
-             * address
+             * @param frame received
+             * frame
              */
-            void ReceiveRouteDiscoveryRequest(Address address);
+            void ReceiveRouteDiscoveryRequest(Ptr<CognitiveRoutingMessage> frame);
+
+            /**
+             * @brief receive route reply
+             * message 
+             * @param frame the frame 
+             */
+            void ReceiveRouteReply(Ptr<CognitiveRoutingMessage> frame);
             
+            /**
+             * @brief end of the route
+             * discovery process
+             * @param frame the message
+             */
+            void EndRouteDiscoveryProcess(Ptr<CognitiveRoutingMessage> frame);
+            
+            /**
+             * @brief send link outage msg
+             * @param frame the message
+             */
+            void SendRouteError(Address address);
+
+            /**
+             * @brief receive broken link
+             * msg
+             * @param frame the message
+             */
+            void ReceiveRouteError(Ptr<CognitiveRoutingMessage> frame);
+
             /**
              * @brief Calculate the link
              * delay between this node and
              * the next one
-             * @param address the next
-             * node address
              */
-            double CalculateLinkDelay(Address address) ;
+            double CalculateLinkDelay();
+
+            /**
+             * @brief set the node 
+             * as cluster head
+             * @param b boolean true
+             * if the node is cluster
+             * head
+             */
+            void SetClusterHeadStatus(bool b);
+
+            /**
+             * @brief set the node as
+             * gateway node
+             * @param b boolean true 
+             * if the node is gateway
+             * node
+             */
+            void SetGatewayStatus(bool b);
+            
+            /**
+             * @brief send the packets
+             * to the destination after
+             * finding the address
+             */
+            void SendPendingPackets();
             
         protected:
             void DoDispose() override;
@@ -159,6 +218,8 @@ typedef Callback<void,Ptr<Packet>> SendPacketCallback;
             
             bool m_IhaveCluster;        //!< boolean to indicate having a cluster now
             bool m_routingEnabled;      //!< boolean to indicate routing enabled or not
+            bool m_ImClusterHead;       //!< boolean to know if the node is a cluster head
+            bool m_ImGateway;           //!< boolean to know if the node is a gateway
 
             inline static uint32_t ReceivedPackets = 0; //!< number of packets reaching their final destination
             inline static uint32_t SentPackets = 0;     //!< number of packets created 
@@ -167,9 +228,22 @@ typedef Callback<void,Ptr<Packet>> SendPacketCallback;
             
             SendFrameCallback m_dataFrameCallback;  //!< sending packet via the data device
             SendFrameCallback m_ctrlFrameCallback;  //!< sending packet via the control device
-            SendPacketCallback m_ctrlAppSendPacketCallback; //!< sending the packet to contorl app  
+            SendPacketCallback m_ctrlAppSendPacketCallback; //!< sending the packet to contorl app
+            IsClusterMemberCallback m_IsClusterMemberCallback;  //!< used to know if the node is CM
 
-            std::map<Address,Address> m_routingTable;       //!< the routing table
+            std::map<Address,Address> m_routingTable;       //!< the routing table and the total delay
+            std::map<Address,EventId> m_timers;             //!< the timers for the validity of addresses  
+            std::map<Address,double> m_minDelay;            //!< the minimum delay of the path
+            
+            static std::map<uint32_t,Ptr<CognitiveRoutingMessage>> msgs; //!< the messages sent by routing layer 
+
+
+            std::vector<Ptr<MacDcfFrame>> *m_vector ;         //!< the vector of the routing unite
+
+            std::set<Address> m_pendingReq ;                 //!< set containing the pending route requests
+
+            Time m_ExpiracyTime = Seconds(600);             //!< the expiracy date of the 
+
 
     };
 }

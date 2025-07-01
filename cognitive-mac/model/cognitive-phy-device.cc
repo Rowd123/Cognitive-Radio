@@ -375,17 +375,19 @@
      // interference will happen regardless of the state of the receiver
      Ptr<SpectrumValue> temp = Create<SpectrumValue>(m_localModel);
     
+     m_interference.AddSignal(spectrumParams->psd, spectrumParams->duration);
+     
      for(uint16_t i = 0 ; i < m_numBins ; i++)
      {
         (*temp)[i] = (*spectrumParams->psd)[i+m_channelIndex*m_numBins];
      }
+     
      if(Integral(*temp)==0.0)
-     { 
+     {
         return;
      }
     // std::cout << CarrierSense(1000) << std::endl;
 
-     m_interference.AddSignal(spectrumParams->psd, spectrumParams->duration);
      
     // std::cout << CarrierSense(1000) << std::endl;
 

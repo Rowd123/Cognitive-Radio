@@ -88,6 +88,14 @@ class CognitiveSpectrumInterference : public Object
      */
     Ptr<const SpectrumValue> GetSpectrum();
 
+    /**
+     * @brief Set the channel info 
+     * @param chInd the channel index 
+     * @param numBn the number of bins
+     * @param numCh the total numb of channels
+     */
+    void SetChannelInfo(uint16_t chInd,uint16_t numBn,uint16_t numCh);
+
   protected:
     void DoDispose() override;
 

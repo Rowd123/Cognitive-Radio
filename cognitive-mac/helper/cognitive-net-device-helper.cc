@@ -29,7 +29,7 @@ NS_LOG_COMPONENT_DEFINE("CognitiveNetDeviceHelper");
 
 CognitiveNetDeviceHelper::CognitiveNetDeviceHelper():
     m_stopTime(Seconds(10.0)),m_startTime(Seconds(0.0)),
-    m_threshold(1e-10)
+    m_singleChannelSensingTime(MicroSeconds(10)),m_threshold(1e-10)
 {
     m_phy.SetTypeId("ns3::CognitivePhyDevice");
     m_device.SetTypeId("ns3::CognitiveGeneralNetDevice");
@@ -126,6 +126,13 @@ CognitiveNetDeviceHelper::SetChannelsInfo(uint16_t bgCount, uint16_t bgSize,
 
 void
 
+CognitiveNetDeviceHelper::SetSingleChannelSensingTime(Time time)
+{
+    m_singleChannelSensingTime = time;
+}
+
+void
+
 CognitiveNetDeviceHelper::SetPhyAttribute(std::string name, const AttributeValue& v)
 {
     m_phy.Set(name, v);
@@ -169,6 +176,8 @@ CognitiveNetDeviceHelper::Install(NodeContainer c) const
         ctrlApp->SetAddress(datadev->GetAddress());
         ctrlSpect->SetChannels(m_bgSize,m_bgCount);
         ctrlSpect->SetThreshold(m_threshold);
+        ctrlSpect->SetSingleChannelSensingPeriod(m_singleChannelSensingTime);
+        ctrlSpect->SetNode(node);
         ctrlApp->SetSpectrumControlModule(ctrlSpect);
         ctrlApp->SetDataDevice(datadev);
         ctrlApp->SetControlDevice(controldev);

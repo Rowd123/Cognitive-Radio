@@ -193,6 +193,11 @@ typedef Callback<void,uint16_t,uint16_t,Address> SetCommonDataChannelsCallback;
           void StopApplication() override;
 
           /**
+           * @brief send NCCI message
+           */
+          void SendNCCIMsg();
+
+          /**
            * @brief updating the neighbor node
            * connectivity periodically 
            */

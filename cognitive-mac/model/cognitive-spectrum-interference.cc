@@ -119,6 +119,7 @@ CognitiveSpectrumInterference::ConditionallyEvaluateChunk()
         Time duration = Now() - m_lastChangeTime;
         NS_LOG_LOGIC("calling m_errorModel->EvaluateChunk (sinr, duration)");
         m_errorModel->EvaluateChunk(sinr, duration);
+        
     }
 }
 
@@ -154,5 +155,6 @@ CognitiveSpectrumInterference::GetSpectrum()
     }
     return tem ;
 }
+
 
 } // namespace ns3

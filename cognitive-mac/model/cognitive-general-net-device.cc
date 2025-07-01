@@ -568,7 +568,6 @@ CognitiveGeneralNetDevice::Send(Ptr<Packet> packet, const Address& dest, uint16_
     {
         m_dataSet.insert(packet->GetUid());
     }
-    // std::cout << "going to send  " << m_node->GetId() << " " << dest << '\n';
     return SendFrom(packet, m_address, dest, protocolNumber);
 }
 

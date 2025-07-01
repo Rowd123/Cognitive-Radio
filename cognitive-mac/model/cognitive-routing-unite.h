@@ -235,7 +235,7 @@ typedef Callback<bool,Address> IsClusterMemberCallback;
             std::map<Address,EventId> m_timers;             //!< the timers for the validity of addresses  
             std::map<Address,double> m_minDelay;            //!< the minimum delay of the path
             
-            static std::map<uint32_t,Ptr<CognitiveRoutingMessage>> msgs; //!< the messages sent by routing layer 
+            inline static std::map<uint32_t,Ptr<CognitiveRoutingMessage>> msgs; //!< the messages sent by routing layer 
 
 
             std::vector<Ptr<MacDcfFrame>> *m_vector ;         //!< the vector of the routing unite

@@ -328,7 +328,6 @@ CognitiveRoutingUnite::ReceiveRouteReply(Ptr<CognitiveRoutingMessage> frame)
     }
     Ptr<Packet> pkt = Create<Packet>(RRepSize);
     Ptr<CognitiveRoutingMessage> msg = CreateObject<CognitiveRoutingMessage>();
-    double delay = CalculateLinkDelay();
     Address des = frame->GetRequiredAddress();
     double delay = CalculateLinkDelay() + frame->GetDelay();
     if(!m_minDelay.count(des))
@@ -416,6 +415,13 @@ CognitiveRoutingUnite::SendPendingPackets()
         }
     }
     *m_vector = vect ;
+}
+
+double
+
+CognitiveRoutingUnite::CalculateLinkDelay()
+{
+    return 0.0;
 }
 
 }

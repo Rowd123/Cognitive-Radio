@@ -10,6 +10,7 @@
 #include <ns3/object.h>
 #include <ns3/nstime.h>
 #include <ns3/random-variable-stream.h>
+#include <ns3/node.h>
 #include <iostream>
 #include <vector>
 
@@ -111,6 +112,12 @@ typedef Callback<void,std::map<uint16_t,double>> QtableResultCallback;
          */
         Time GetBandGroupSensingTime();
 
+        /**
+         * @brief Set the node attached 
+         * to the device
+         */
+        void SetNode(Ptr<Node> node);
+
         private :
 
         void DoSenseChannel(uint16_t bgIndex , uint16_t Index , uint16_t fois);
@@ -124,7 +131,6 @@ typedef Callback<void,std::map<uint16_t,double>> QtableResultCallback;
         std::vector<std::vector<bool>> Temp;    //!< vector used for measurments
  
         Time m_SingleChannelSensingPeriod;//!< the single channel sensing time 
-        Time m_ChannelMeasuringTime;      //!< the time for measuring a channel
 
 
         uint16_t m_bgSize ;             //!< number of channels inside the large group 
@@ -136,6 +142,8 @@ typedef Callback<void,std::map<uint16_t,double>> QtableResultCallback;
         double m_w2;                    //!< second constant for calculating the reward
         double m_learningRate;          //!< the learning rate
         double m_discountFactor;        //!< the discount factor
+
+        Ptr<Node> m_node ;              //!< the node the module attached to 
 
 
 

@@ -114,6 +114,11 @@ class CognitiveNetDeviceHelper
      */
     void SetThreshold(double threshold);
 
+    /**
+     * @param time single channel sensing time
+     */
+    void SetSingleChannelSensingTime(Time time);
+
     
     /**
      * \tparam Ts \deduced Argument types
@@ -156,6 +161,7 @@ class CognitiveNetDeviceHelper
     Ptr<SpectrumModel> m_localModel;    //!< the local spectrum model for a single channel 
     Time m_stopTime;                    //!< the stopping time of the control application
     Time m_startTime;                   //!< the starting time of the control application
+    Time m_singleChannelSensingTime;    //!< the time needed for sensing a single channel
     uint16_t m_bgCount;                 //!< the number of large bandgroups 
     uint16_t m_bgSize;                  //!< the size of each large band group
     uint16_t m_numOfChannels;           //!< the total number of channels

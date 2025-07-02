@@ -136,6 +136,7 @@ typedef Callback<void,std::map<uint16_t,double>> QtableResultCallback;
         uint16_t m_bgSize ;             //!< number of channels inside the large group 
         uint16_t m_bgCount ;            //!< the number of large groups 
         uint16_t m_Nsensing;            //!< the number of sensing times for each channel within the Tbg
+        uint16_t m_sensingRounds;       //!< the number of sensing rounds
 
         double m_threshold ;            //!< the threshold for deciding the channel status
         double m_w1;                    //!< first constant for calculating the reward

@@ -18,7 +18,8 @@ NS_OBJECT_ENSURE_REGISTERED(SpectrumControlModule);
 
 SpectrumControlModule::SpectrumControlModule() :
     m_SingleChannelSensingPeriod(MicroSeconds(10)),
-    m_Nsensing(15),m_threshold(0.0),
+    m_Nsensing(15),m_sensingRounds(100),
+    m_threshold(0.0),
     m_w1(0.5),m_w2(0.5),m_learningRate(0.5),
     m_discountFactor(0.5)
 {
@@ -100,25 +101,31 @@ SpectrumControlModule::SenseSpectrum()
     double maxQbg = -1.0 ;
     uint16_t bgIndex = -1 ;
     Temp.assign(m_bgSize,std::vector<bool>(m_Nsensing,false));
-    for(uint16_t i = 0 ; i < m_bgCount ; i++)
+    for(uint16_t k = 0 ; k < m_sensingRounds ; k++)
     {
-        if(maxQbg<(*m_bgQtable)[i])
+        Time now = k*m_Nsensing*m_bgSize*m_SingleChannelSensingPeriod;
+        for(uint16_t i = 0 ; i < m_bgCount ; i++)
         {
-            maxQbg = (*m_bgQtable)[i] ;
-            bgIndex = i ; 
+            if(maxQbg<(*m_bgQtable)[i])
+            {
+                maxQbg = (*m_bgQtable)[i] ;
+                bgIndex = i ; 
+            }
+        }
+        Time BandChannelMeasuringTime = m_Nsensing*m_SingleChannelSensingPeriod;
+        for(uint16_t i = 0 ; i < m_bgSize ; i++)
+        {
+            for(uint16_t j = 0 ;j < m_Nsensing ; j++)
+            {
+                Simulator::Schedule(now+m_SingleChannelSensingPeriod*j+i*BandChannelMeasuringTime,
+                                    &SpectrumControlModule::DoSenseChannel,this,bgIndex,i,j);
+            }
+        }
+        if(k!=0)
+        {
+            Simulator::Schedule(now,&SpectrumControlModule::UpdateQtable,this,bgIndex);
         }
     }
-    Time BandChannelMeasuringTime = m_bgSize*m_SingleChannelSensingPeriod;
-    for(uint16_t i = 0 ; i < m_bgSize ; i++)
-    {
-        for(uint16_t j = 0 ;j < m_Nsensing ; j++)
-        {
-            Simulator::Schedule(m_SingleChannelSensingPeriod*j+i*BandChannelMeasuringTime,
-                                &SpectrumControlModule::DoSenseChannel,this,bgIndex,i,j);
-        }
-    }
-    Simulator::Schedule(m_Nsensing*m_bgSize*m_SingleChannelSensingPeriod,
-                        &SpectrumControlModule::UpdateQtable,this,bgIndex);
 }
 
 void
@@ -126,7 +133,7 @@ void
 SpectrumControlModule::DoSenseChannel(uint16_t bgIndex, uint16_t Index, uint16_t fois)
 {
     double res = m_senseResultCallback(Index + bgIndex*m_bgSize);
-   // std::cout << res << " " << m_threshold << std::endl;
+    //std::cout << Index << " " << m_threshold << std::endl;
     if(res>=m_threshold)
     {
         Temp[Index][fois] = true;
@@ -150,14 +157,14 @@ SpectrumControlModule::UpdateQtable(uint16_t Index)
         double P = 0.0 ; 
         for(uint16_t j = 0 ; j < m_Nsensing ; j++)
         {
-            std::cout << Temp[i][j] << " ";
+       //     std::cout << Temp[i][j] << " ";
             if(!Temp[i][j])
             {
                 if(j==0 || Temp[i][j-1]){T++;}
                 P++;
             }
         }
-        std::cout << std::endl;
+       // std::cout << std::endl;
         if(T > 0.0)
         {
             P = P / m_Nsensing ;

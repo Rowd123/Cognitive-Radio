@@ -16,8 +16,8 @@ NS_OBJECT_ENSURE_REGISTERED(CognitiveControlApplication);
 
 CognitiveControlApplication::CognitiveControlApplication():
       m_spectrumControlModule(nullptr),
-      m_resenseTime(Seconds(1)),m_ctrlMsgDuration(Seconds(10)),
-      m_SendNCCIPeriod(Seconds(5)),m_updateTables(Seconds(1)),
+      m_resenseTime(Seconds(60)),m_ctrlMsgDuration(Seconds(10)),
+      m_SendNCCIPeriod(Seconds(5)),m_updateTables(Seconds(0.1)),
       m_initialtime(Seconds(2)),m_clusterAge(Seconds(5)),
       m_CADC(-1),m_CBDC(-1),m_CHrequests(0),
       m_NNmax(10),m_NRCmax(10),
@@ -125,7 +125,7 @@ CognitiveControlApplication::StartApplication()
       Simulator::Schedule(m_initialtime+Seconds(1),&CognitiveControlApplication::ChooseMyCluseterCandidate,this);
       Simulator::Schedule(m_initialtime+Seconds(1.3),&CognitiveControlApplication::EvaluateCH_REQs,this);
       Simulator::Schedule(m_initialtime+Seconds(1.5),&CognitiveControlApplication::EvaluateCH_ANMs,this);
-      Simulator::Schedule(m_ctrlMsgDuration,&CognitiveControlApplication::SendNCCIMsg,this);
+      Simulator::Schedule(m_initialtime,&CognitiveControlApplication::SendNCCIMsg,this);
 }
 
 
@@ -142,8 +142,9 @@ void
 
 CognitiveControlApplication::SendNCCIMsg()
 {
-      Simulator::Schedule(m_ctrlMsgDuration,&CognitiveControlApplication::SendMsg,
+      Simulator::ScheduleNow(&CognitiveControlApplication::SendMsg,
                               this,(CognitiveControlMessage::NCCI));
+      Simulator::Schedule(m_clusterAge,&CognitiveControlApplication::SendNCCIMsg,this);
 }
 
 void
@@ -173,7 +174,7 @@ CognitiveControlApplication::SendMsg(CognitiveControlMessage::Kind kind)
             
             NS_ASSERT_MSG(!m_getRemainingEnergyCallback.IsNull(),"you haven't set the get energy callback");
 
-           // std::cout << m_node->GetId() << " generating NCCI msg " << Simulator::Now() << '\n'; 
+            std::cout << m_node->GetId() << " generating NCCI msg " << Simulator::Now() << '\n'; 
 
             Ptr<CognitiveControlMessage> msg = CreateObject<CognitiveControlMessage>();
             m_curEnergy = m_getRemainingEnergyCallback();
@@ -214,7 +215,7 @@ CognitiveControlApplication::SendMsg(CognitiveControlMessage::Kind kind)
       else if(kind==CognitiveControlMessage::CH_REQ)
       {
             NS_ASSERT_MSG(m_CHCaddress!=m_address,"sending CH_REQ to the same node");
-           // std::cout << m_node->GetId() << " generating CH_REQ msg " << Simulator::Now() << '\n'; 
+           // std::cout << m_node->GetId() << " generating CH_REQ msg " << Simulator::Now() << ' '<< m_CHCaddress << '\n'; 
             Ptr<CognitiveControlMessage> msg = CreateObject<CognitiveControlMessage>();
             Ptr<Packet> pkt = Create<Packet>(CH_REQsize);
             msg->SetPacket(pkt);
@@ -272,7 +273,7 @@ CognitiveControlApplication::ReceiveMsg(Ptr<CognitiveControlMessage> msg)
       {
       case(CognitiveControlMessage::NCCI):
       {
-          //  std::cout << m_node->GetId() << " I have received NCCI " << Simulator::Now() << '\n';
+        //   std::cout << m_node->GetId() << " I have received NCCI "<<msg->GetSourceAddress() <<' ' << Simulator::Now() << '\n';
             Address src = msg->GetSourceAddress();
             m_msgs[src] = msg;
             m_ncci_Expiracy[src].Cancel();
@@ -282,7 +283,7 @@ CognitiveControlApplication::ReceiveMsg(Ptr<CognitiveControlMessage> msg)
       }
       case(CognitiveControlMessage::CH_REQ):
       {     
-         //   std::cout << m_node->GetId() << " I have received CH_REQ " << Simulator::Now() << '\n'; 
+          //  std::cout << m_node->GetId() << " I have received CH_REQ " << Simulator::Now() << '\n'; 
             Address reqAddress = msg->GetSourceAddress();
             m_ch_req_Expiracy[reqAddress] = Simulator::Schedule(m_ctrlMsgDuration,
                                                                &CognitiveControlApplication::DeleteCtrlMsg,this,
@@ -291,7 +292,7 @@ CognitiveControlApplication::ReceiveMsg(Ptr<CognitiveControlMessage> msg)
       }
       case(CognitiveControlMessage::CH_ANM):
       {
-       //     std::cout << m_node->GetId() << " I have received CH_ANM " << Simulator::Now() << '\n';
+           // std::cout << m_node->GetId() << " I have received CH_ANM " << Simulator::Now() << '\n';
             
             Address CHaddress = msg->GetSourceAddress();
             uint16_t CADC = msg->GetCADC();
@@ -306,7 +307,7 @@ CognitiveControlApplication::ReceiveMsg(Ptr<CognitiveControlMessage> msg)
       }
       case(CognitiveControlMessage::JOIN_REQ):
       {
-         //   std::cout << m_node->GetId() << " I have received JOIN_REQ " << Simulator::Now() << '\n';
+          //  std::cout << m_node->GetId() << " I have received JOIN_REQ " << Simulator::Now() << '\n';
             m_members_Expiracy[msg->GetSourceAddress()].Cancel();
             m_members_Expiracy[msg->GetSourceAddress()]=
                   Simulator::Schedule(m_ctrlMsgDuration,&CognitiveControlApplication::DeleteCtrlMsg,this,
@@ -316,7 +317,7 @@ CognitiveControlApplication::ReceiveMsg(Ptr<CognitiveControlMessage> msg)
       }
       case(CognitiveControlMessage::GH_ANM):
       {     
-        //    std::cout << m_node->GetId() << " I have received GH_ANM " << Simulator::Now() << '\n';
+            std::cout << m_node->GetId() << " I have received GH_ANM " << Simulator::Now() << '\n';
             
             m_ImGateway = true;
             m_gh_anm_Expiracy[msg->GetSourceAddress()].Cancel();
@@ -504,6 +505,7 @@ CognitiveControlApplication::EvaluateCH_REQs()
 {
       uint16_t m_nCH_REQ = (uint16_t)(m_ch_req_Expiracy.size());
       uint16_t m_nNN = (uint16_t)((*m_neighborsInfo).size());
+      std::cout << m_nNN << ' ' << m_nCH_REQ << ' ' << Simulator::Now() <<'\n';
       if((double)(m_nCH_REQ)>=m_Etta*((double)m_nNN))
       {
             std::set<uint16_t> EAC;
@@ -544,9 +546,10 @@ CognitiveControlApplication::EvaluateCH_REQs()
                   m_routingUnite->SetCluster(m_CHaddress);
                   m_setCommonDataChannelsCallback(m_CADC,m_CBDC,m_CHaddress);
             }
+            std::cout << m_node->GetId() << ' ' << m_CADC << ' ' << m_CBDC << '\n';
             Simulator::ScheduleNow(&CognitiveControlApplication::SendMsg,this,
                                     CognitiveControlMessage::CH_ANM);
-            Simulator::Schedule(m_clusterAge,&CognitiveControlApplication::ChooseGateways,this);
+            Simulator::Schedule(Seconds(1),&CognitiveControlApplication::ChooseGateways,this);
       }
       else
       {

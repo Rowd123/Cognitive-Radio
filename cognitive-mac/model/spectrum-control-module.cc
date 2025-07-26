@@ -150,7 +150,7 @@ SpectrumControlModule::UpdateQtable(uint16_t Index)
 {
     
     int maxQvalue = *std::max_element((*m_Qtable).begin(),(*m_Qtable).end());
-    std::cout << m_node->GetId() << " " << Simulator::Now() << '\n';
+    //std::cout << m_node->GetId() << " " << Simulator::Now() << '\n';
     for(uint16_t i = 0 ; i < m_bgSize ; i++)
     {
         double T = 0.0 ;
@@ -177,10 +177,10 @@ SpectrumControlModule::UpdateQtable(uint16_t Index)
     double sum = 0.0 ;
     for(uint16_t i  = 0 ; i < m_bgSize ; i++)
     {
-        std::cout << (*m_Qtable)[Index*m_bgSize+i] << ' ';
+       // std::cout << (*m_Qtable)[Index*m_bgSize+i] << ' ';
         sum+=(*m_Qtable)[Index*m_bgSize + i] ;
     }
-    std::cout << std::endl;
+    //std::cout << std::endl;
     sum /= m_bgSize;
     Simulator::ScheduleNow(&SpectrumControlModule::SendSensingResult,this,Index);
 }

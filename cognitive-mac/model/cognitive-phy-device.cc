@@ -456,7 +456,6 @@
  void
  CognitivePhyDevice::EndRx()
  {
- //   std::cout << m_netDevice->GetNode()->GetId() <<" Rx has ended " << Simulator::Now() << std::endl;
      NS_LOG_FUNCTION(this);
      NS_LOG_LOGIC(this << " state: " << m_state);
      NS_ASSERT(m_state == RX);
@@ -573,8 +572,7 @@
  void
  CognitivePhyDevice::StartSensing()
  {
-   // std::cout << m_netDevice->GetNode()->GetId() << " going to start sensing "<< m_state <<" " << Simulator::Now() << std::endl;
-    if(m_state==TX)
+   if(m_state==TX)
     {
         AbortTx();
     }

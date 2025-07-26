@@ -193,6 +193,11 @@ typedef Callback<void,uint16_t> CurrentDataChannelCallback;
          * @brief the Doer the back off process
          */
         void DoBackOffProcedure();
+
+        /**
+         * @brief ended backoff
+         */
+        void EndBackOff();
         
         /**
          * @brief CTS Received

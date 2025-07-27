@@ -525,11 +525,6 @@ CognitiveGeneralNetDevice::ReceiveData()
     }
     else
     {
-      /*  if(!m_receiveCtrlPacket.IsNull())
-        {
-            m_receiveCtrlPacket(m_rdata->GetPacket());
-        }
-     `*/
         m_sendPhase = Simulator::Schedule(SIFS,&CognitiveGeneralNetDevice::SendAck,this);
     }
 }

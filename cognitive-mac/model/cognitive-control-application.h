@@ -311,6 +311,8 @@ typedef Callback<void,uint16_t,uint16_t,Address> SetCommonDataChannelsCallback;
   
           bool m_ImClusterHead;                             //!< boolean to know if this node is cluster head
           bool m_ImGateway;                                 //!< boolean to know if this node is gateway
+
+          std::set<Address> m_clusters;                     //!< boolean to know the cluster I'm with    
     };
 }
 

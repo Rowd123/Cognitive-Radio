@@ -327,6 +327,7 @@ CognitiveControlApplication::ReceiveMsg(Ptr<CognitiveControlMessage> msg)
             m_gh_anm_Expiracy[msg->GetSourceAddress()]=
                   Simulator::Schedule(m_ctrlMsgDuration,&CognitiveControlApplication::DeleteCtrlMsg,this,
                                                             msg->GetSourceAddress(),kind);
+            m_clusters.insert(msg->GetSourceAddress());
             break;
       }
       default:
@@ -386,6 +387,7 @@ CognitiveControlApplication::DeleteCtrlMsg(Address address,
       case(CognitiveControlMessage::GH_ANM):
       {
             m_gh_anm_Expiracy.erase(address);
+            m_clusters.erase(address);
             if(!m_ImClusterHead)
             {
                   if(m_gh_anm_Expiracy.size()==0)

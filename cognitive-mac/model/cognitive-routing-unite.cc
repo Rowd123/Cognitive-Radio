@@ -73,12 +73,17 @@ CognitiveRoutingUnite::SendPacket(Ptr<Packet> packet, const Address source, cons
     else
     {
         SentPackets++;
-        if(m_IhaveCluster)
+        if(m_routingTable.count(dest))
         {
-            frame->SetCurrentReceiver(Mac48Address::ConvertFrom(m_CHaddress));
+            frame->SetCurrentReceiver(Mac48Address::ConvertFrom(m_routingTable[dest]));
+            this->SendFrame(frame);
+        }
+        else
+        {
+            m_vector->push_back(frame);
+            Simulator::ScheduleNow(&CognitiveRoutingUnite::StartRouteDiscovery,this,dest);
         }
     }
-    this->SendFrame(frame);
 }
 
 void
@@ -87,12 +92,32 @@ CognitiveRoutingUnite::ReceiveFrame(Ptr<MacDcfFrame> frame)
 {
     Address orignalReceiver = Mac48Address::ConvertFrom(frame->GetOriginalReceiver());
     Address currentReceiver = Mac48Address::ConvertFrom(frame->GetCurrentReceiver());
+    
     if(frame->GetProtocolNumber()==1000)
     {
         if(currentReceiver==m_address || currentReceiver==Broadcast)
         {
             NS_ASSERT_MSG(!m_ctrlAppSendPacketCallback.IsNull(),"the send packet for the ctrl app isn't set");
             m_ctrlAppSendPacketCallback(frame->GetPacket());
+        }
+        else
+        {
+            return;
+        }
+    }
+    else if(frame->GetProtocolNumber()==989)
+    {
+        Ptr<CognitiveRoutingMessage> routFrame = msgs[frame->GetPacket()->GetUid()];
+        if(currentReceiver==m_address || currentReceiver==Broadcast)
+        {
+            if(routFrame->GetMsgType()==RReq)
+            {
+                Simulator::ScheduleNow(&CognitiveRoutingUnite::ReceiveRouteDiscoveryRequest,this,routFrame);
+            }
+            else if(routFrame->GetMsgType()==RRep)
+            {
+                Simulator::ScheduleNow(&CognitiveRoutingUnite::ReceiveRouteDiscoveryRequest,this,routFrame);
+            }
         }
         else
         {
@@ -250,6 +275,10 @@ void
 
 CognitiveRoutingUnite::StartRouteDiscovery(Address address)
 {
+    if(!m_routingEnabled)
+    {
+        return ;
+    }
     Ptr<Packet> pkt = Create<Packet>(RReqSize);
     Ptr<CognitiveRoutingMessage> msg = CreateObject<CognitiveRoutingMessage>();
     msgs[pkt->GetUid()] = msg; 
@@ -258,7 +287,8 @@ CognitiveRoutingUnite::StartRouteDiscovery(Address address)
     msg->SetCurrentSender(Mac48Address::ConvertFrom(m_address));
     msg->SetOriginalSender(Mac48Address::ConvertFrom(m_address));
     msg->SetPacket(pkt);
-    m_pendingReq.insert(address); 
+    msg->SetProtocolNumber(routingProtocol);
+   // m_pendingReq.insert(address); 
     if(m_CHaddress!=m_address)
     {
         msg->SetOriginalReceiver(Mac48Address::ConvertFrom(m_CHaddress));
@@ -275,42 +305,47 @@ CognitiveRoutingUnite::StartRouteDiscovery(Address address)
 void
 
 CognitiveRoutingUnite::ReceiveRouteDiscoveryRequest(Ptr<CognitiveRoutingMessage> frame)
-{
+{  
+    Address des = frame->GetRequiredAddress();
+    Address src = Mac48Address::ConvertFrom(frame->GetOriginalSender());
+     
+    if(m_address==des)
+    {
+        Ptr<Packet> pkt = Create<Packet>(RRepSize);
+        Ptr<CognitiveRoutingMessage> msg = CreateObject<CognitiveRoutingMessage>();
+        msgs[pkt->GetUid()] = msg ;
+        msg->SetOriginalSender(Mac48Address::ConvertFrom(m_address));
+        msg->SetCurrentSender(Mac48Address::ConvertFrom(m_address));
+        msg->SetOriginalReceiver(frame->GetOriginalSender());
+        msg->SetCurrentReceiver(frame->GetOriginalSender());
+        msg->SetRequiredAddress(des);
+        msg->SetMsgType(RRep);
+        msg->SetDelay(0.0);
+        msg->SetProtocolNumber(routingProtocol);
+        m_ctrlFrameCallback(msg);
+
+        return;
+    }
+    if(m_pendingReq.count(std::make_pair(src,des)))
+    {
+        return;
+    }
     if(m_ImClusterHead || m_ImGateway)
     {
-        Address des = frame->GetRequiredAddress();
-        bool IsCM = m_IsClusterMemberCallback(des);
-        if(m_ImClusterHead && IsCM)
-        {
-            double delay = CalculateLinkDelay();
-            Ptr<Packet> pkt = Create<Packet> (RRepSize);
-            Ptr<CognitiveRoutingMessage> msg = CreateObject<CognitiveRoutingMessage>();
-            msgs[pkt->GetSize()] = msg;
-            msg->SetOriginalSender(Mac48Address::ConvertFrom(m_address));
-            msg->SetCurrentSender(Mac48Address::ConvertFrom(m_address));
-            msg->SetOriginalReceiver(Mac48Address::ConvertFrom(Broadcast)); 
-            msg->SetCurrentReceiver(Mac48Address::ConvertFrom(Broadcast));
-            msg->SetRequiredAddress(des);
-            msg->SetMsgType(RoutingMsgType::RRep);
-            msg->SetDelay(delay);
-            m_pendingReq.erase(des);
-            m_ctrlFrameCallback(msg);
-        }
-        else
-        {
-            Ptr<Packet> pkt = Create<Packet>(RReqSize);
-            Ptr<CognitiveRoutingMessage> msg = CreateObject<CognitiveRoutingMessage>();
-            msgs[pkt->GetUid()] = msg;
-            msg->SetRequiredAddress(des);
-            msg->SetMsgType(RoutingMsgType::RReq);
-            msg->SetPacket(pkt);
-            msg->SetOriginalSender(Mac48Address::ConvertFrom(m_address));
-            msg->SetCurrentSender(Mac48Address::ConvertFrom(m_address));
-            msg->SetOriginalReceiver(Mac48Address::ConvertFrom(Broadcast));
-            msg->SetCurrentReceiver(Mac48Address::ConvertFrom(Broadcast));
-            m_pendingReq.insert(des);
-            m_ctrlFrameCallback(msg);
-        }
+        Ptr<Packet> pkt = Create<Packet>(RReqSize);
+        Ptr<CognitiveRoutingMessage> msg = CreateObject<CognitiveRoutingMessage>();
+        msgs[pkt->GetUid()] = msg;
+        msg->SetRequiredAddress(des);
+        msg->SetMsgType(RoutingMsgType::RReq);
+        msg->SetPacket(pkt);
+        msg->SetOriginalSender(Mac48Address::ConvertFrom(m_address));
+        msg->SetCurrentSender(Mac48Address::ConvertFrom(m_address));
+        msg->SetOriginalReceiver(Mac48Address::ConvertFrom(Broadcast));
+        msg->SetCurrentReceiver(Mac48Address::ConvertFrom(Broadcast));
+        msg->SetProtocolNumber(routingProtocol);
+        m_pendingReq.insert(std::make_pair(src,des));
+        m_ctrlFrameCallback(msg);
+        Simulator::Schedule(m_ExpiracyTime,CognitiveRoutingUnite::DeleteRequest,this,src,des);
     }
     else
     {
@@ -322,12 +357,6 @@ void
 
 CognitiveRoutingUnite::ReceiveRouteReply(Ptr<CognitiveRoutingMessage> frame)
 {
-    if(!m_pendingReq.count(frame->GetRequiredAddress()))
-    {
-        return ;
-    }
-    Ptr<Packet> pkt = Create<Packet>(RRepSize);
-    Ptr<CognitiveRoutingMessage> msg = CreateObject<CognitiveRoutingMessage>();
     Address des = frame->GetRequiredAddress();
     double delay = CalculateLinkDelay() + frame->GetDelay();
     if(!m_minDelay.count(des))
@@ -350,18 +379,24 @@ CognitiveRoutingUnite::ReceiveRouteReply(Ptr<CognitiveRoutingMessage> frame)
     }
     else
     {
-        Ptr<Packet> pkt = Create<Packet> (RRepSize);
-        Ptr<CognitiveRoutingMessage> msg = CreateObject<CognitiveRoutingMessage>();
-        msgs[pkt->GetSize()] = msg;
-        msg->SetOriginalSender(Mac48Address::ConvertFrom(m_address));
-        msg->SetCurrentSender(Mac48Address::ConvertFrom(m_address));
-        msg->SetOriginalReceiver(Mac48Address::ConvertFrom(Broadcast)); 
-        msg->SetCurrentReceiver(Mac48Address::ConvertFrom(Broadcast));
-        msg->SetRequiredAddress(des);
-        msg->SetMsgType(RoutingMsgType::RRep);
-        msg->SetDelay(delay);
-        m_pendingReq.erase(des);
-        m_ctrlFrameCallback(msg);   
+        for(auto& [i,j] : m_pendingReq)
+        {
+            if(j==des)
+            {
+                Ptr<Packet> pkt = Create<Packet> (RRepSize);
+                Ptr<CognitiveRoutingMessage> msg = CreateObject<CognitiveRoutingMessage>();
+                msgs[pkt->GetSize()] = msg;
+                msg->SetOriginalSender(Mac48Address::ConvertFrom(m_address));
+                msg->SetCurrentSender(Mac48Address::ConvertFrom(m_address));
+                msg->SetOriginalReceiver(Mac48Address::ConvertFrom(i)); 
+                msg->SetCurrentReceiver(Mac48Address::ConvertFrom(i));
+                msg->SetRequiredAddress(des);
+                msg->SetMsgType(RoutingMsgType::RRep);
+                msg->SetDelay(delay);
+                msg->SetProtocolNumber(routingProtocol);
+                m_ctrlFrameCallback(msg);   
+            }
+        }
     }
 }
 
@@ -383,8 +418,9 @@ CognitiveRoutingUnite::SendRouteError(Address address)
 
 void
 
-CognitiveRoutingUnite::ReceiveRouteError(Ptr<CognitiveRoutingMessage> frame)
+CognitiveRoutingUnite::ReceiveRouteError(Ptr<CognitiveRoutingMessage> fra)
 {
+    Ptr<CognitiveRoutingMessage> frame = msgs[fra->GetPacket()->GetUid()];
     if(m_address==frame->GetRequiredAddress())
     {
         StartRouteDiscovery(frame->GetRequiredAddress());
@@ -422,6 +458,13 @@ double
 CognitiveRoutingUnite::CalculateLinkDelay()
 {
     return 0.0;
+}
+
+void 
+
+CognitiveRoutingUnite::DeleteRequest(Address a , Address b)
+{
+    m_pendingReq.erase(std::make_pair(a,b));
 }
 
 }

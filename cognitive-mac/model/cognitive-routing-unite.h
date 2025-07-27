@@ -175,7 +175,7 @@ typedef Callback<bool,Address> IsClusterMemberCallback;
              * msg
              * @param frame the message
              */
-            void ReceiveRouteError(Ptr<CognitiveRoutingMessage> frame);
+            void ReceiveRouteError(Ptr<CognitiveRoutingMessage>frame);
 
             /**
              * @brief Calculate the link
@@ -213,6 +213,14 @@ typedef Callback<bool,Address> IsClusterMemberCallback;
             void DoDispose() override;
 
         private:
+
+            /**
+             * @brief delete a route request
+             * @param a sender of the request
+             * @param b target of the request
+             */
+            void DeleteRequest(Address a ,Address b);
+            
             Address m_CHaddress;        //!< the cluster head address
             Address m_address;          //!< the node address
             
@@ -223,6 +231,7 @@ typedef Callback<bool,Address> IsClusterMemberCallback;
 
             inline static uint32_t ReceivedPackets = 0; //!< number of packets reaching their final destination
             inline static uint32_t SentPackets = 0;     //!< number of packets created 
+            const uint16_t routingProtocol = 989;       //!< the number of routing protocol
 
             DataRate m_dataRate;        //!< the data rate of the PHY
             
@@ -232,7 +241,7 @@ typedef Callback<bool,Address> IsClusterMemberCallback;
             IsClusterMemberCallback m_IsClusterMemberCallback;  //!< used to know if the node is CM
 
             std::map<Address,Address> m_routingTable;       //!< the routing table and the total delay
-            std::map<Address,EventId> m_timers;             //!< the timers for the validity of addresses  
+            std::map<Address,EventId> m_timers;             //!< the timers for the validity of addresses 
             std::map<Address,double> m_minDelay;            //!< the minimum delay of the path
             
             inline static std::map<uint32_t,Ptr<CognitiveRoutingMessage>> msgs; //!< the messages sent by routing layer 
@@ -240,7 +249,7 @@ typedef Callback<bool,Address> IsClusterMemberCallback;
 
             std::vector<Ptr<MacDcfFrame>> *m_vector ;         //!< the vector of the routing unite
 
-            std::set<Address> m_pendingReq ;                 //!< set containing the pending route requests
+            std::set<std::pair<Address,Address>> m_pendingReq; //!< set containing the pending route requests
 
             Time m_ExpiracyTime = Seconds(600);             //!< the expiracy date of the 
 

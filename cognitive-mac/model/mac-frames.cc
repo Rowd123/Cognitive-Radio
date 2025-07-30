@@ -15,7 +15,7 @@ NS_LOG_COMPONENT_DEFINE("MacDcfFrame");
 NS_OBJECT_ENSURE_REGISTERED(MacDcfFrame);
 
 MacDcfFrame::MacDcfFrame()
-    : m_packet(nullptr)
+    : m_packet(nullptr),m_totDelay(0.0)
 {
 
 }
@@ -190,6 +190,48 @@ uint16_t
 MacDcfFrame::GetProtocolNumber()
 {
     return m_protocolNum;
+}
+
+void 
+
+MacDcfFrame::SetMsgType(RoutingMsgType type)
+{
+    m_rtType = type;
+}
+
+void
+
+MacDcfFrame::SetRequiredAddress(Address address)
+{
+    m_requiredAddress = address;
+}
+
+Address 
+
+MacDcfFrame::GetRequiredAddress()
+{
+    return m_requiredAddress;
+}
+
+RoutingMsgType
+
+MacDcfFrame::GetMsgType()
+{
+    return m_rtType;
+}
+
+void
+
+MacDcfFrame::SetDelay(double d)
+{
+    m_totDelay = d; 
+}
+
+double
+
+MacDcfFrame::GetDelay()
+{
+    return m_totDelay;
 }
 
 }

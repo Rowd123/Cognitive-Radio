@@ -276,6 +276,8 @@ typedef Callback<void,uint16_t,uint16_t,Address> SetCommonDataChannelsCallback;
           ChannelQuality m_availableChannelQvalues;            //!< available channels and their Q values
           NeighborNodeConnectivity m_neighborsInfo;            //!< neighboring nodes and their available channels
           NeighborClusterReachability m_neighborCluster;       //!< neighboring cluster and their CADC 
+          std::map<Address,std::pair<uint16_t,
+                                     uint16_t>> m_oneHopClust; //!< clusters that I can reach from other nodes
           std::map<Address,EventId> m_ncci_Expiracy;           //!< the event of the expiract of the NCCI message
           std::map<Address,EventId> m_ch_anm_Expiracy;         //!< the event of the expiracy of the CH_ANM message 
           std::map<Address,EventId> m_ch_req_Expiracy;         //!< the event of the expiracy of the CH_REQ message

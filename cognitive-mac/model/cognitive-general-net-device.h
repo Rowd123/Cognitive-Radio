@@ -317,6 +317,12 @@ typedef Callback<void,uint16_t> CurrentDataChannelCallback;
          */
         void SetRoutingUnite(Ptr<CognitiveRoutingUnite> routingUnite);
 
+        /**
+         * @brief drop the current 
+         * packet
+         */
+        void DropPacket();
+
 
 
         void SetIfIndex(const uint32_t index) override;
@@ -397,8 +403,10 @@ typedef Callback<void,uint16_t> CurrentDataChannelCallback;
         inline static uint32_t recPackets = 0;
         EventId m_sendPhase ;               //!< time to retry the transmission
         EventId m_nav ;                     //!< virtual carrier sense timers
+        EventId m_dropPacket;               //!< timer for dropping a packet
         inline static double latency = 0.0; //!< the total latency over all packets
         Address m_CHaddress;                //!< the address of the cluster head     
+        Time m_dropTime;                    //!< the time to drop a packet
         
     };
 

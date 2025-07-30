@@ -161,6 +161,7 @@ CognitiveControlApplication::StartSensingPeriod()
      NS_ASSERT_MSG(!m_startSensingPeriodCallback.IsNull(),"the start sensing period isn't connected to the net device");
      m_startSensingPeriodCallback(m_spectrumControlModule->GetBandGroupSensingTime());
      Simulator::ScheduleNow(&SpectrumControlModule::StartWorking,m_spectrumControlModule); 
+     
 }
 
 void
@@ -198,7 +199,7 @@ CognitiveControlApplication::SendMsg(CognitiveControlMessage::Kind kind)
             
             NS_ASSERT_MSG(m_ImClusterHead,"going to send CH_ANM while not a CH");
 
-            std::cout << m_node->GetId() << " generating CH_ANM msg " << m_CADC << ' ' << m_CBDC << Simulator::Now() << '\n'; 
+           // std::cout << m_node->GetId() << " generating CH_ANM msg " << m_CADC << ' ' << m_CBDC << Simulator::Now() << '\n'; 
             
             Ptr<CognitiveControlMessage> msg = CreateObject<CognitiveControlMessage>();
             Ptr<Packet> pkt = Create<Packet>(CH_ANMsize);
@@ -243,7 +244,7 @@ CognitiveControlApplication::SendMsg(CognitiveControlMessage::Kind kind)
       }
       else if(kind==CognitiveControlMessage::GH_ANM)
       {
-            std::cout << m_node->GetId() << " generating GH_ANM msg " << Simulator::Now() << '\n'; 
+           // std::cout << m_node->GetId() << " generating GH_ANM msg " << Simulator::Now() << '\n'; 
             for(auto& i : m_gateways)
             {
                   if(i.second==m_address)
@@ -259,7 +260,9 @@ CognitiveControlApplication::SendMsg(CognitiveControlMessage::Kind kind)
                   msg->SetKind(CognitiveControlMessage::GH_ANM);
                   msgMap[pkt->GetUid()] = msg ;
                   m_controlDevice->Send(pkt,i.second,m_protocol);
+           //       std::cout << i.second << ' ' ;
             }
+          //  std::cout << '\n';
       }
 }
 
@@ -309,8 +312,8 @@ CognitiveControlApplication::ReceiveMsg(Ptr<CognitiveControlMessage> msg)
       }
       case(CognitiveControlMessage::JOIN_REQ):
       {
-           std::cout << m_node->GetId() << " I have received JOIN_REQ " << Simulator::Now() 
-                                         << ' ' << msg->GetSourceAddress() << '\n';
+         //  std::cout << m_node->GetId() << " I have received JOIN_REQ " << Simulator::Now() 
+         //                                << ' ' << msg->GetSourceAddress() << '\n';
             m_members_Expiracy[msg->GetSourceAddress()].Cancel();
             m_members_Expiracy[msg->GetSourceAddress()]=
                   Simulator::Schedule(m_ctrlMsgDuration,&CognitiveControlApplication::DeleteCtrlMsg,this,
@@ -327,6 +330,7 @@ CognitiveControlApplication::ReceiveMsg(Ptr<CognitiveControlMessage> msg)
             m_gh_anm_Expiracy[msg->GetSourceAddress()]=
                   Simulator::Schedule(m_ctrlMsgDuration,&CognitiveControlApplication::DeleteCtrlMsg,this,
                                                             msg->GetSourceAddress(),kind);
+            m_routingUnite->SetGatewayStatus(true);
             m_clusters.insert(msg->GetSourceAddress());
             break;
       }
@@ -393,6 +397,7 @@ CognitiveControlApplication::DeleteCtrlMsg(Address address,
                   if(m_gh_anm_Expiracy.size()==0)
                   {
                         m_ImGateway = false;
+                        m_routingUnite->SetGatewayStatus(false);
                   }
             }
             break;
@@ -409,6 +414,7 @@ CognitiveControlApplication::UpdateNeighborsInfoTables()
 {
     //  std::cout << m_node->GetId()-11 << " Im here updating neighbors info tables " << Simulator::Now() << '\n';  
       (*m_neighborsInfo).clear();
+      m_oneHopClust.clear();
       for(auto& i : (m_msgs))
       {
             Address tempAd = i.first;
@@ -419,7 +425,14 @@ CognitiveControlApplication::UpdateNeighborsInfoTables()
                   avCH.insert(j.first);
             }
             (*m_neighborsInfo).insert({tempAd,avCH});
+
+            NeighborClusterReachability temNCR = i.second->GetNeighborClusterReachabilityMap();
+            for(auto& j : *temNCR)
+            {
+                  m_oneHopClust[j.first] = j.second;
+            }
       }
+      
       m_updateneighbors = Simulator::Schedule(m_updateTables,
                                               &CognitiveControlApplication::UpdateNeighborsInfoTables,this);
 }
@@ -522,7 +535,7 @@ CognitiveControlApplication::EvaluateCH_REQs()
       //std::cout << m_nNN << ' ' << m_nCH_REQ << ' ' << Simulator::Now() <<'\n';
       if((double)(m_nCH_REQ)>=m_Etta*((double)m_nNN))
       {
-            std::cout << m_node->GetId() << ' ' << m_nNN << ' '  << m_nCH_REQ << '\n';
+            std::cout << m_node->GetId() << ' ' << m_nNN << ' '  << m_nCH_REQ << ' ' << Simulator::Now() << '\n';
             std::set<uint16_t> EAC;
             for(auto& i : (*m_availableChannelQvalues))
             {
@@ -558,12 +571,16 @@ CognitiveControlApplication::EvaluateCH_REQs()
             m_ImClusterHead = true;
             if(!m_setCommonDataChannelsCallback.IsNull())
             {
+                  m_routingUnite->EnableRouting(true);
                   m_routingUnite->SetCluster(m_CHaddress);
                   m_setCommonDataChannelsCallback(m_CADC,m_CBDC,m_CHaddress);
             }
         //    std::cout << m_node->GetId() << ' ' << m_CADC << ' ' << m_CBDC << '\n';
             Simulator::ScheduleNow(&CognitiveControlApplication::SendMsg,this,
                                     CognitiveControlMessage::CH_ANM);
+            m_routingUnite->SetClusterHeadStatus(true);
+            Simulator::Schedule(Seconds(0.5),&CognitiveControlApplication::SendMsg,this,
+                                              CognitiveControlMessage::NCCI);
             Simulator::Schedule(Seconds(1),&CognitiveControlApplication::ChooseGateways,this);
       }
       else
@@ -574,6 +591,7 @@ CognitiveControlApplication::EvaluateCH_REQs()
                   m_CBDC = -1;
             }
             m_ImClusterHead = false;
+            m_routingUnite->SetClusterHeadStatus(false);
       }
       Simulator::Schedule(m_clusterAge,&CognitiveControlApplication::EvaluateCH_REQs,this);
       
@@ -583,7 +601,7 @@ void
 
 CognitiveControlApplication::EvaluateCH_ANMs()
 {
-     // std::cout << m_node->GetId()-11 << " Im here evaluating cn announcements " << Simulator::Now() << '\n';  
+     // std::cout << m_node->GetId() << " Im here evaluating cn announcements " << Simulator::Now() << '\n';  
       if(m_ImClusterHead)
       {
             return ;
@@ -591,7 +609,7 @@ CognitiveControlApplication::EvaluateCH_ANMs()
       double mx = 0.0;
       for(auto& i : (*m_neighborCluster))
       {
-          //  std::cout << i.first <<' ';
+         ///   std::cout << i.first <<' ';
             if(m_Vvalues[i.first] > mx)
             {
                   mx = m_Vvalues[i.first];
@@ -600,17 +618,23 @@ CognitiveControlApplication::EvaluateCH_ANMs()
                   m_CHaddress = i.first;
             }
       }
-     // std::cout << '\n';
+  //    std::cout << '\n';
       if(mx > 0.0)
-      {
+      {     
             if(!m_setCommonDataChannelsCallback.IsNull())
             {
+                  m_routingUnite->EnableRouting(true);
                   m_routingUnite->SetCluster(m_CHaddress);
                   m_setCommonDataChannelsCallback(m_CADC,m_CBDC,m_CHaddress);
             }
          //   std::cout << m_node->GetId() << " I'm choosing " << m_CHaddress << std::endl;
             Simulator::ScheduleNow(&CognitiveControlApplication::SendMsg,this,
                                    CognitiveControlMessage::JOIN_REQ);
+      }
+      else
+      {
+            m_routingUnite->UnSetCluster();
+            m_routingUnite->EnableRouting(false);
       }
       Simulator::Schedule(m_clusterAge,&CognitiveControlApplication::EvaluateCH_ANMs,this);
 }
@@ -620,13 +644,17 @@ void
 CognitiveControlApplication::ChooseGateways()
 {
      // std::cout << m_node->GetId()-11 << " Im here choosing gateways " << Simulator::Now() << '\n';  
+      m_gateways.clear();
       if(!m_ImClusterHead)
       {
-            m_gateways.clear();
             return ;
       }
-      for(auto& i : *m_neighborCluster)
+      for(auto& i : m_oneHopClust)
       {
+            if(i.first==m_address)
+            {
+                  continue;
+            }
             double mx = 0.0 ;
             Address temAddress;
             for(auto& j : m_msgs)

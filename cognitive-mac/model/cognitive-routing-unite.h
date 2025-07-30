@@ -8,8 +8,7 @@
 #define COGNITIVE_ROUTING_UNITE
 
 
-#include "cognitive-routing-messages.h"
-
+#include "mac-frames.h"
 #include <ns3/object.h>
 
 #include <map>
@@ -148,21 +147,21 @@ typedef Callback<bool,Address> IsClusterMemberCallback;
              * @param frame received
              * frame
              */
-            void ReceiveRouteDiscoveryRequest(Ptr<CognitiveRoutingMessage> frame);
+            void ReceiveRouteDiscoveryRequest(Ptr<MacDcfFrame> frame);
 
             /**
              * @brief receive route reply
              * message 
              * @param frame the frame 
              */
-            void ReceiveRouteReply(Ptr<CognitiveRoutingMessage> frame);
+            void ReceiveRouteReply(Ptr<MacDcfFrame> frame);
             
             /**
              * @brief end of the route
              * discovery process
              * @param frame the message
              */
-            void EndRouteDiscoveryProcess(Ptr<CognitiveRoutingMessage> frame);
+            void EndRouteDiscoveryProcess(Ptr<MacDcfFrame> frame);
             
             /**
              * @brief send link outage msg
@@ -175,7 +174,7 @@ typedef Callback<bool,Address> IsClusterMemberCallback;
              * msg
              * @param frame the message
              */
-            void ReceiveRouteError(Ptr<CognitiveRoutingMessage>frame);
+            void ReceiveRouteError(Ptr<MacDcfFrame>frame);
 
             /**
              * @brief Calculate the link
@@ -208,6 +207,14 @@ typedef Callback<bool,Address> IsClusterMemberCallback;
              * finding the address
              */
             void SendPendingPackets();
+
+            /**
+             * @brief delete the 
+             * node from the routing 
+             * table
+             * @param address of the node
+             */
+            void DeleteNode(Address address);
             
         protected:
             void DoDispose() override;
@@ -244,14 +251,16 @@ typedef Callback<bool,Address> IsClusterMemberCallback;
             std::map<Address,EventId> m_timers;             //!< the timers for the validity of addresses 
             std::map<Address,double> m_minDelay;            //!< the minimum delay of the path
             
-            inline static std::map<uint32_t,Ptr<CognitiveRoutingMessage>> msgs; //!< the messages sent by routing layer 
+            inline static std::map<uint32_t,Ptr<MacDcfFrame>> msgs; //!< the messages sent by routing layer 
 
 
             std::vector<Ptr<MacDcfFrame>> *m_vector ;         //!< the vector of the routing unite
 
             std::set<std::pair<Address,Address>> m_pendingReq; //!< set containing the pending route requests
+            
+            std::set<Address> m_requiredAddresses;             //!< set containing the required addresses
 
-            Time m_ExpiracyTime = Seconds(600);             //!< the expiracy date of the 
+            Time m_ExpiracyTime ;             //!< the expiracy date of the 
 
 
     };

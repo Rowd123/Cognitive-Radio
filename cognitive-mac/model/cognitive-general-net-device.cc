@@ -109,7 +109,8 @@ CognitiveGeneralNetDevice::CognitiveGeneralNetDevice()
       m_threshold(0.0),
       m_currentTX(false),
       m_backoff(false),
-      m_dataDevice(false)
+      m_dataDevice(false),
+      m_dropTime(Seconds(10))
 {
     m_rv = CreateObject<UniformRandomVariable>();
     NS_LOG_FUNCTION(this);
@@ -686,7 +687,7 @@ void
 CognitiveGeneralNetDevice::NotifyPartialTransmissionEnd(Ptr<const Packet>)
 {
     NS_LOG_FUNCTION(this);
-    NS_ASSERT_MSG(m_state == TX, "TX end notified while state != TX");
+    //NS_ASSERT_MSG(m_state == TX, "TX end notified while state != TX");
    //std::cout << m_node->GetId()-11 << " Im here notify partial  transmission " << Simulator::Now() << '\n';  
     ChangeState(IDLE);
     if(m_data)
@@ -709,20 +710,12 @@ CognitiveGeneralNetDevice::ContinueTransmission()
     ChangeState(IDLE);
     NS_ASSERT(m_queue);
     if(!m_IhaveChannel){return;}
-    if(!m_dataDevice)
-    {
-     //   std::cout << m_node->GetId()-11 << " I'm going to continue transmission ";
-    }
     if(m_currentTX)
     {
         m_sendPhase = Simulator::ScheduleNow(&CognitiveGeneralNetDevice::DIFSPhase,this);
     }
     else
     {
-        if(!m_dataDevice)
-        {
-      //      std::cout << " I don't have a packet currently \n";
-        }
         if (!m_queue->empty())
         {
             Ptr<MacDcfFrame> data = m_queue->front();
@@ -733,11 +726,19 @@ CognitiveGeneralNetDevice::ContinueTransmission()
             NS_LOG_LOGIC("scheduling transmission now");
             m_sendPhase.Cancel();
             m_sendPhase = Simulator::ScheduleNow(&CognitiveGeneralNetDevice::DIFSPhase,this);
-        }
-        else
-        {
+            m_dropPacket.Cancel();
+            m_dropPacket = Simulator::Schedule(m_dropTime,&CognitiveGeneralNetDevice::DropPacket,this);
         }
     }
+}
+
+void
+
+CognitiveGeneralNetDevice::DropPacket()
+{
+    m_currentTX = false;
+    m_sendPhase.Cancel();
+    m_sendPhase = Simulator::ScheduleNow(&CognitiveGeneralNetDevice::ContinueTransmission,this);
 }
 
 void

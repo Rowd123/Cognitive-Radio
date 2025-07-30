@@ -162,6 +162,40 @@ class MacDcfFrame : public Object
        */
       void SetOriginalPacketUid(uint32_t uid);
 
+      /**
+       * set the message type if it was
+       * a routing message
+       * @param type 
+       */
+      void SetMsgType(RoutingMsgType type);
+
+      /**
+       * get the routing message
+       * type
+       */
+      RoutingMsgType GetMsgType();
+
+      /**
+       * set the required address
+       * for routing messages
+       * @param address the address 
+       */
+      void SetRequiredAddress(Address address);
+
+      /**
+       * get the required address
+       */
+      Address GetRequiredAddress();
+
+      /**
+       * Set the delay
+       */
+      void SetDelay(double del);
+
+      /**
+       * Get the total delay
+       */
+      double GetDelay();
 
       protected:
       void DoDispose() override;
@@ -172,12 +206,15 @@ class MacDcfFrame : public Object
       Mac48Address m_RxAddress;    //!< the address of the receiever
       Mac48Address m_curTxAddress; //!< the address of the current sender hop
       Mac48Address m_curRxAddress; //!< the address of the current receiver hop
+      Address m_requiredAddress;   //!< the required address 
       Time     m_duration;         //!< the duration of the transmission
       Time     m_creationTime ;    //!< the creation time of the packet
       Time     m_arrivalTime;      //!< the time for finishing reception
       FrameType    m_kind;         //!< the kind of the frame
+      RoutingMsgType m_rtType;     //!< the type of the routing message
       uint32_t m_originalPkt;      //!< the origial packet uid
       uint16_t m_protocolNum;      //!< the protocol number 
+      double m_totDelay;           //!< the total delay(used for routing messages)
 
 };
 

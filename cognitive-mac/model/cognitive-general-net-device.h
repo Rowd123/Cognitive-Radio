@@ -323,6 +323,11 @@ typedef Callback<void,uint16_t> CurrentDataChannelCallback;
          */
         void DropPacket();
 
+        /**
+         * @brief get PDR info
+         */
+        static void GetPDRInfo();
+
 
 
         void SetIfIndex(const uint32_t index) override;
@@ -399,7 +404,7 @@ typedef Callback<void,uint16_t> CurrentDataChannelCallback;
         bool m_currentTX ;                  //!< boolean to know if we have a packet to transmit now 
         bool m_backoff;                     //!< boolean to know that we are in backoff phase 
         bool m_dataDevice;                  //!< boolean to indicate if the net device is for data or control
-        inline static uint32_t genPackets = 0;
+        inline static uint32_t sentPackets = 0;
         inline static uint32_t recPackets = 0;
         EventId m_sendPhase ;               //!< time to retry the transmission
         EventId m_nav ;                     //!< virtual carrier sense timers

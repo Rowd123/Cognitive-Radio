@@ -143,6 +143,12 @@ typedef Callback<void,uint16_t,uint16_t,Address> SetCommonDataChannelsCallback;
           void SetCognitiveRoutingUnite(Ptr<CognitiveRoutingUnite> routingUnite);
 
           /**
+           * @brief intiate work
+           * and configure system
+           */
+          void GetStarted();
+
+          /**
            * @brief get the routing unite
            * representing the network
            * layer

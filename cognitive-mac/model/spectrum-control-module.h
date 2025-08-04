@@ -131,6 +131,7 @@ typedef Callback<void,std::map<uint16_t,double>> QtableResultCallback;
         std::vector<std::vector<bool>> Temp;    //!< vector used for measurments
  
         Time m_SingleChannelSensingPeriod;//!< the single channel sensing time 
+        Time m_radioTunuingTime;          //!< the time needed for tuning the radio
 
 
         uint16_t m_bgSize ;             //!< number of channels inside the large group 
@@ -145,6 +146,8 @@ typedef Callback<void,std::map<uint16_t,double>> QtableResultCallback;
         double m_discountFactor;        //!< the discount factor
 
         Ptr<Node> m_node ;              //!< the node the module attached to 
+
+        bool m_WideSense;               //!< do a Wide Sense for the spectrum
 
 
 

@@ -33,6 +33,11 @@ typedef Callback<bool,Address> IsClusterMemberCallback;
             static TypeId GetTypeId();
 
             /**
+             * @brief Get Simulation Results
+             */
+            static void GetSimulationResults();
+
+            /**
              * @brief receiving a packet from the application
              * layer
              * @param packet the packet need to be sent
@@ -238,6 +243,8 @@ typedef Callback<bool,Address> IsClusterMemberCallback;
 
             inline static uint32_t ReceivedPackets = 0; //!< number of packets reaching their final destination
             inline static uint32_t SentPackets = 0;     //!< number of packets created 
+            inline static uint32_t RoutingBytes=0;      //!< number of received routing bytes
+            inline static uint32_t ControlBytes=0;      //!< number of received control bytes
             const uint16_t routingProtocol = 989;       //!< the number of routing protocol
 
             DataRate m_dataRate;        //!< the data rate of the PHY
@@ -261,6 +268,7 @@ typedef Callback<bool,Address> IsClusterMemberCallback;
             std::set<Address> m_requiredAddresses;             //!< set containing the required addresses
 
             Time m_ExpiracyTime ;             //!< the expiracy date of the 
+            inline static Time TotDelay =Seconds(0.0); //!< the total delay over all packets
 
 
     };

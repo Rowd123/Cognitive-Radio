@@ -20,7 +20,7 @@ CognitiveControlApplication::CognitiveControlApplication():
       m_SendNCCIPeriod(Seconds(5)),m_updateTables(Seconds(0.1)),
       m_initialtime(Seconds(2)),m_clusterAge(Seconds(5)),
       m_CADC(-1),m_CBDC(-1),m_CHrequests(0),
-      m_NNmax(10),m_NRCmax(10),
+      m_NNmax(20),m_NRCmax(10),
       m_beta1(0.25),m_beta2(0.25),
       m_beta3(0.25),m_beta4(0.25),
       m_CFmax(20),m_Emax(15000),m_Etta(0.5),
@@ -112,6 +112,23 @@ void
 
 CognitiveControlApplication::StartApplication()
 {
+      Simulator::Schedule(Seconds(0),&CognitiveControlApplication::GetStarted,this);
+}
+
+
+void
+
+CognitiveControlApplication::StopApplication()
+{
+      m_curAction.Cancel();
+      m_resense.Cancel();
+
+}
+
+void 
+
+CognitiveControlApplication::GetStarted()
+{
       NS_ASSERT_MSG(m_spectrumControlModule,"you haven't linked the spectrum module yet");
       Simulator::ScheduleNow(&CognitiveControlApplication::StartSensingPeriod,this);
       m_updateneighbors = Simulator::Schedule(m_updateTables,
@@ -127,15 +144,6 @@ CognitiveControlApplication::StartApplication()
       Simulator::Schedule(m_initialtime,&CognitiveControlApplication::SendNCCIMsg,this);
 }
 
-
-void
-
-CognitiveControlApplication::StopApplication()
-{
-      m_curAction.Cancel();
-      m_resense.Cancel();
-
-}
 
 void
 
@@ -312,8 +320,8 @@ CognitiveControlApplication::ReceiveMsg(Ptr<CognitiveControlMessage> msg)
       }
       case(CognitiveControlMessage::JOIN_REQ):
       {
-         //  std::cout << m_node->GetId() << " I have received JOIN_REQ " << Simulator::Now() 
-         //                                << ' ' << msg->GetSourceAddress() << '\n';
+           std::cout << m_node->GetId() << " I have received JOIN_REQ " << Simulator::Now() 
+                                         << ' ' << msg->GetSourceAddress() << '\n';
             m_members_Expiracy[msg->GetSourceAddress()].Cancel();
             m_members_Expiracy[msg->GetSourceAddress()]=
                   Simulator::Schedule(m_ctrlMsgDuration,&CognitiveControlApplication::DeleteCtrlMsg,this,

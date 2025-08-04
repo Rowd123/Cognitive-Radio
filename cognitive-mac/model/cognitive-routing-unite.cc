@@ -44,6 +44,17 @@ CognitiveRoutingUnite::GetTypeId()
     return tid;
 }
 
+void 
+
+CognitiveRoutingUnite::GetSimulationResults()
+{
+    std::cout << "Total Number of Generated Packets " << SentPackets << '\n';
+    std::cout << "Total Number of Received Packets " << ReceivedPackets << '\n';
+    std::cout << "Total Delay " << TotDelay << '\n';
+    std::cout << "Total Number of Sent Routing Bytes " << RoutingBytes << '\n';
+    std::cout << "Total Number of Sent Control Bytes " << ControlBytes << '\n';
+}
+
 void
 
 CognitiveRoutingUnite::DoDispose()
@@ -70,6 +81,7 @@ CognitiveRoutingUnite::SendPacket(Ptr<Packet> packet, const Address source, cons
     if(protocolNumber==1000)
     {
         frame->SetCurrentReceiver(Mac48Address::ConvertFrom(dest));
+        ControlBytes+=packet->GetSize();
         this->SendFrame(frame);
     }
     else
@@ -136,6 +148,7 @@ CognitiveRoutingUnite::ReceiveFrame(Ptr<MacDcfFrame> frame)
         if(orignalReceiver==m_address)
         {
             ReceivedPackets++;
+            TotDelay+= frame->CalculateLatency();
             return;
         }
         else
@@ -179,9 +192,18 @@ void
 
 CognitiveRoutingUnite::SendFrame(Ptr<MacDcfFrame> frame)
 {
-    if(frame->GetProtocolNumber()==1000)
+    uint16_t protocolNumber = frame->GetProtocolNumber();
+    if(protocolNumber==1000 || protocolNumber==989)
     {
         NS_ASSERT_MSG(!m_ctrlFrameCallback.IsNull(),"the control send frame callback isn't set");
+        if(protocolNumber==1000)
+        {
+            ControlBytes+=frame->GetPacket()->GetSize();
+        }
+        else
+        {
+            RoutingBytes+=frame->GetPacket()->GetSize();
+        }
         m_ctrlFrameCallback(frame);
     }
     else
@@ -293,7 +315,7 @@ CognitiveRoutingUnite::StartRouteDiscovery(Address address)
     {
         return ;
     }
-    //std::cout << m_address << " I'm going to start route discovery \n";  
+    std::cout << m_address << " I'm going to start route discovery \n";  
     
     Ptr<Packet> pkt = Create<Packet>(RReqSize);
     Ptr<MacDcfFrame> msg = CreateObject<MacDcfFrame>();
@@ -306,20 +328,20 @@ CognitiveRoutingUnite::StartRouteDiscovery(Address address)
     msg->SetPacket(pkt);
     msg->SetProtocolNumber(routingProtocol);
     
-    //std::cout << " going to send ";
+    std::cout << " going to send ";
     if(m_CHaddress!=m_address)
     {
-        //std::cout << " to my cluster head \n";
+        std::cout << " to my cluster head \n";
         msg->SetOriginalReceiver(Mac48Address::ConvertFrom(m_CHaddress));
         msg->SetCurrentReceiver(Mac48Address::ConvertFrom(m_CHaddress));
     }
     else
     {
-        //std::cout << " Broadcast \n";
+        std::cout << " Broadcast \n";
         msg->SetOriginalReceiver(Mac48Address::ConvertFrom(Broadcast));
         msg->SetCurrentReceiver(Mac48Address::ConvertFrom(Broadcast));
     }
-    m_ctrlFrameCallback(msg);
+    this->SendFrame(msg);
 }
 
 void
@@ -331,8 +353,8 @@ CognitiveRoutingUnite::ReceiveRouteDiscoveryRequest(Ptr<MacDcfFrame> frame)
     
     if(m_address==des)
     {
-        //std::cout << m_address << " I have received a route discovery request sent from " << src << " to " << des << '\n';
-        //std::cout << " I'm in the node \n";
+        std::cout << m_address << " I have received a route discovery request sent from " << src << " to " << des << '\n';
+        std::cout << " I'm in the node \n";
         Ptr<Packet> pkt = Create<Packet>(RRepSize);
         Ptr<MacDcfFrame> msg = CreateObject<MacDcfFrame>();
         msgs[pkt->GetUid()] = msg ;
@@ -345,7 +367,7 @@ CognitiveRoutingUnite::ReceiveRouteDiscoveryRequest(Ptr<MacDcfFrame> frame)
         msg->SetMsgType(RRep);
         msg->SetDelay(0.0);
         msg->SetProtocolNumber(routingProtocol);
-        m_ctrlFrameCallback(msg);
+        this->SendFrame(msg);
 
         return;
     }
@@ -361,8 +383,8 @@ CognitiveRoutingUnite::ReceiveRouteDiscoveryRequest(Ptr<MacDcfFrame> frame)
         //std::cout << m_requiredAddresses.size() << '\n';
         if(!m_requiredAddresses.count(des))
         {
-            //std::cout << m_address << " I have received a route discovery request sent from " << src << " to " << des << '\n';
-            //std::cout << "I'm not in the node " << Simulator::Now() << '\n';
+            std::cout << m_address << " I have received a route discovery request sent from " << src << " to " << des << '\n';
+            std::cout << "I'm not in the node " << Simulator::Now() << '\n';
             m_requiredAddresses.insert(des);
             Ptr<Packet> pkt = Create<Packet>(RReqSize);
             Ptr<MacDcfFrame> msg = CreateObject<MacDcfFrame>();
@@ -375,7 +397,7 @@ CognitiveRoutingUnite::ReceiveRouteDiscoveryRequest(Ptr<MacDcfFrame> frame)
             msg->SetOriginalReceiver(Mac48Address::ConvertFrom(Broadcast));
             msg->SetCurrentReceiver(Mac48Address::ConvertFrom(Broadcast));
             msg->SetProtocolNumber(routingProtocol);
-            m_ctrlFrameCallback(msg);
+            this->SendFrame(msg);
             Simulator::Schedule(m_ExpiracyTime,&CognitiveRoutingUnite::DeleteRequest,this,src,des);
         }
         else
@@ -414,7 +436,7 @@ CognitiveRoutingUnite::ReceiveRouteReply(Ptr<MacDcfFrame> frame)
             m_timers[des] = Simulator::Schedule(m_ExpiracyTime*5,&CognitiveRoutingUnite::DeleteNode,this,des);
         }
     }
-  //  std::cout << m_address << ' ' << " I have received a route reply " << Simulator::Now() << '\n';
+    std::cout << m_address << ' ' << " I have received a route reply " << Simulator::Now() << '\n';
     SendPendingPackets();
     for(auto& [i,j] : m_pendingReq)
     {
@@ -432,7 +454,7 @@ CognitiveRoutingUnite::ReceiveRouteReply(Ptr<MacDcfFrame> frame)
             msg->SetCurrentReceiver(Mac48Address::ConvertFrom(i));
             msg->SetDelay(delay);
             msg->SetProtocolNumber(routingProtocol);
-            m_ctrlFrameCallback(msg);   
+            this->SendFrame(msg);   
         }
     }
 }
@@ -450,7 +472,7 @@ CognitiveRoutingUnite::SendRouteError(Address address)
     msg->SetOriginalReceiver(Mac48Address::ConvertFrom(address));
     msg->SetCurrentReceiver(Mac48Address::ConvertFrom(address));
     msg->SetMsgType(RoutingMsgType::RErr);
-    m_ctrlFrameCallback(msg);
+    this->SendFrame(msg);
 }
 
 void

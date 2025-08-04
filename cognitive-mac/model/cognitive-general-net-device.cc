@@ -555,7 +555,10 @@ CognitiveGeneralNetDevice::ReceiveAck()
 {
    // std::cout << "I have received an ack " << m_data->GetPacket()->GetUid() << '\n'; 
     m_currentTX = false;
-    recPackets+= m_dataSet.count(m_rdata->GetOriginalPacketUid());
+    if(m_data->GetProtocolNumber()==1)
+    {
+        recPackets+=m_data->GetPacket()->GetSize();
+    }
     m_sendPhase.Cancel();
     m_sendPhase = Simulator::ScheduleNow(&CognitiveGeneralNetDevice::ContinueTransmission,this);
     
@@ -684,7 +687,7 @@ CognitiveGeneralNetDevice::StartTransmission(Ptr<Packet> packet)
 
 void
 
-CognitiveGeneralNetDevice::NotifyPartialTransmissionEnd(Ptr<const Packet>)
+CognitiveGeneralNetDevice::NotifyPartialTransmissionEnd(Ptr<const Packet> pkt)
 {
     NS_LOG_FUNCTION(this);
     //NS_ASSERT_MSG(m_state == TX, "TX end notified while state != TX");
@@ -697,6 +700,13 @@ CognitiveGeneralNetDevice::NotifyPartialTransmissionEnd(Ptr<const Packet>)
             m_currentTX = false;
             m_sendPhase.Cancel();
             m_sendPhase = Simulator::ScheduleNow(&CognitiveGeneralNetDevice::ContinueTransmission,this);
+        }
+        if(m_data->GetProtocolNumber()==1)
+        {
+            if(m_map[pkt->GetUid()]->GetKind()==FrameType::DATA)
+            {
+                sentPackets+=pkt->GetSize();
+            }
         }
     }
 }
@@ -833,7 +843,7 @@ uint32_t
 
 CognitiveGeneralNetDevice::NumOfGenPackets()
 {
-    return genPackets;
+    return sentPackets;
 }
 
 uint32_t
@@ -935,4 +945,11 @@ CognitiveGeneralNetDevice::TransmissionPermission(bool b)
     m_IhaveChannel = b ;
 }
 
+void
+
+CognitiveGeneralNetDevice::GetPDRInfo()
+{
+    std::cout << " Total Number of Sent Packets " << sentPackets << '\n';
+    std::cout << " Total Number of received Packets " << recPackets << '\n'; 
+}
 }

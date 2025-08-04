@@ -17,11 +17,11 @@ NS_OBJECT_ENSURE_REGISTERED(SpectrumControlModule);
 
 
 SpectrumControlModule::SpectrumControlModule() :
-    m_SingleChannelSensingPeriod(MicroSeconds(10)),
-    m_Nsensing(15),m_sensingRounds(100),
+    m_SingleChannelSensingPeriod(MicroSeconds(100)),
+    m_Nsensing(100),m_sensingRounds(30),
     m_threshold(0.0),
     m_w1(0.5),m_w2(0.5),m_learningRate(0.5),
-    m_discountFactor(0.5)
+    m_discountFactor(1)
 {
     m_Qtable = new std::vector<double>();
     m_bgQtable = new std::vector<double>();
@@ -149,7 +149,7 @@ void
 SpectrumControlModule::UpdateQtable(uint16_t Index)
 {
     
-    int maxQvalue = *std::max_element((*m_Qtable).begin(),(*m_Qtable).end());
+    double maxQvalue = *std::max_element((*m_Qtable).begin(),(*m_Qtable).end());
     //std::cout << m_node->GetId() << " " << Simulator::Now() << '\n';
     for(uint16_t i = 0 ; i < m_bgSize ; i++)
     {
@@ -177,10 +177,8 @@ SpectrumControlModule::UpdateQtable(uint16_t Index)
     double sum = 0.0 ;
     for(uint16_t i  = 0 ; i < m_bgSize ; i++)
     {
-       // std::cout << (*m_Qtable)[Index*m_bgSize+i] << ' ';
         sum+=(*m_Qtable)[Index*m_bgSize + i] ;
     }
-    //std::cout << std::endl;
     sum /= m_bgSize;
     Simulator::ScheduleNow(&SpectrumControlModule::SendSensingResult,this,Index);
 }

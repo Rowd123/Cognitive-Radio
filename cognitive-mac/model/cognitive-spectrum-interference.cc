@@ -129,10 +129,6 @@ CognitiveSpectrumInterference::SetNoisePowerSpectralDensity(Ptr<const SpectrumVa
 {
     NS_LOG_FUNCTION(this << noisePsd);
     m_noise = noisePsd;
-    // we can initialize m_allSignal only now, because earlier we
-    // didn't know what spectrum model was going to be used.
-    // we'll now create a zeroed SpectrumValue using the same
-    // SpectrumModel which is being specified for the noise.
     m_allSignals = Create<SpectrumValue>(noisePsd->GetSpectrumModel());
 }
 

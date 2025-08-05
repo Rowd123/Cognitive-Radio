@@ -133,7 +133,6 @@ void
 SpectrumControlModule::DoSenseChannel(uint16_t bgIndex, uint16_t Index, uint16_t fois)
 {
     double res = m_senseResultCallback(Index + bgIndex*m_bgSize);
-    //std::cout << Index << " " << m_threshold << std::endl;
     if(res>=m_threshold)
     {
         Temp[Index][fois] = true;
@@ -150,21 +149,18 @@ SpectrumControlModule::UpdateQtable(uint16_t Index)
 {
     
     double maxQvalue = *std::max_element((*m_Qtable).begin(),(*m_Qtable).end());
-    //std::cout << m_node->GetId() << " " << Simulator::Now() << '\n';
     for(uint16_t i = 0 ; i < m_bgSize ; i++)
     {
         double T = 0.0 ;
         double P = 0.0 ; 
         for(uint16_t j = 0 ; j < m_Nsensing ; j++)
         {
-       //     std::cout << Temp[i][j] << " ";
             if(!Temp[i][j])
             {
                 if(j==0 || Temp[i][j-1]){T++;}
                 P++;
             }
         }
-       // std::cout << std::endl;
         if(T > 0.0)
         {
             P = P / m_Nsensing ;

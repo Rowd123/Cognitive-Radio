@@ -193,6 +193,14 @@ typedef Callback<void,uint16_t,uint16_t,Address> SetCommonDataChannelsCallback;
            */
           void SetMaximumNeighboringNodes(uint16_t number);
 
+           /**
+            * @brief get number of 
+            * neighboring nodes
+            * @return total 
+            * number of neighbors
+            */
+           uint16_t GetNumberOfNeighbors();
+
           private:
 
           void StartApplication() override;
@@ -255,6 +263,7 @@ typedef Callback<void,uint16_t,uint16_t,Address> SetCommonDataChannelsCallback;
             * is a cluster member
             */
            bool IsClusterMember(Address address);
+
           
           Ptr<SpectrumControlModule> m_spectrumControlModule;  //!< the spectrum control module 
           Ptr<NetDevice> m_dataDevice;                         //!< the net device 

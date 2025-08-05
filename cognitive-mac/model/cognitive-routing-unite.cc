@@ -67,7 +67,6 @@ void
 
 CognitiveRoutingUnite::SendPacket(Ptr<Packet> packet, const Address source, const Address dest, uint16_t protocolNumber)
 {
-  //  std::cout << source << " " << dest << '\n';
     Ptr<MacDcfFrame> frame = CreateObject<MacDcfFrame>();
     frame->SetPacket(packet);
     frame->SetOriginalSender(Mac48Address::ConvertFrom(source));
@@ -143,8 +142,6 @@ CognitiveRoutingUnite::ReceiveFrame(Ptr<MacDcfFrame> frame)
     }
     else
     {
-        //std::cout << m_address << " I have received a packet " << Simulator::Now() << '\n';;
-        //std::cout << orignalReceiver << ' ' << frame->GetOriginalSender() << '\n'; 
         if(orignalReceiver==m_address)
         {
             ReceivedPackets++;
@@ -165,7 +162,6 @@ CognitiveRoutingUnite::ReceiveFrame(Ptr<MacDcfFrame> frame)
                     {
                         frame->SetCurrentReceiver(Mac48Address::ConvertFrom(m_routingTable[orignalReceiver]));
                         frame->SetCurrentSender(Mac48Address::ConvertFrom(m_address));
-                        //std::cout << frame->GetCurrentReceiver() << ' ' << frame->GetCurrentSender() << '\n';
                         m_dataFrameCallback(frame);
                     }
                     else
@@ -293,6 +289,13 @@ CognitiveRoutingUnite::SetIsClusterMemberCallback(IsClusterMemberCallback c)
     m_IsClusterMemberCallback = c;
 }
 
+void 
+
+CognitiveRoutingUnite::SetNumberOfNeighboringNodesCallback(NumberOfNeighbors c)
+{
+    m_numberOfNeighborsCallback = c;
+}
+
 void
 
 CognitiveRoutingUnite::SetClusterHeadStatus(bool b)
@@ -315,7 +318,6 @@ CognitiveRoutingUnite::StartRouteDiscovery(Address address)
     {
         return ;
     }
-    std::cout << m_address << " I'm going to start route discovery \n";  
     
     Ptr<Packet> pkt = Create<Packet>(RReqSize);
     Ptr<MacDcfFrame> msg = CreateObject<MacDcfFrame>();
@@ -328,16 +330,13 @@ CognitiveRoutingUnite::StartRouteDiscovery(Address address)
     msg->SetPacket(pkt);
     msg->SetProtocolNumber(routingProtocol);
     
-    std::cout << " going to send ";
     if(m_CHaddress!=m_address)
     {
-        std::cout << " to my cluster head \n";
         msg->SetOriginalReceiver(Mac48Address::ConvertFrom(m_CHaddress));
         msg->SetCurrentReceiver(Mac48Address::ConvertFrom(m_CHaddress));
     }
     else
     {
-        std::cout << " Broadcast \n";
         msg->SetOriginalReceiver(Mac48Address::ConvertFrom(Broadcast));
         msg->SetCurrentReceiver(Mac48Address::ConvertFrom(Broadcast));
     }
@@ -353,8 +352,6 @@ CognitiveRoutingUnite::ReceiveRouteDiscoveryRequest(Ptr<MacDcfFrame> frame)
     
     if(m_address==des)
     {
-        std::cout << m_address << " I have received a route discovery request sent from " << src << " to " << des << '\n';
-        std::cout << " I'm in the node \n";
         Ptr<Packet> pkt = Create<Packet>(RRepSize);
         Ptr<MacDcfFrame> msg = CreateObject<MacDcfFrame>();
         msgs[pkt->GetUid()] = msg ;
@@ -373,18 +370,13 @@ CognitiveRoutingUnite::ReceiveRouteDiscoveryRequest(Ptr<MacDcfFrame> frame)
     }
     if(m_pendingReq.count(std::make_pair(src,des)))
     {
-        //std::cout << "Hshh\n";
         return;
     }
-   // std::cout << m_address << ' ' << m_ImClusterHead << '\n';
     if(m_ImClusterHead || m_ImGateway)
     {
        m_pendingReq.insert(std::make_pair(src,des));
-        //std::cout << m_requiredAddresses.size() << '\n';
         if(!m_requiredAddresses.count(des))
         {
-            std::cout << m_address << " I have received a route discovery request sent from " << src << " to " << des << '\n';
-            std::cout << "I'm not in the node " << Simulator::Now() << '\n';
             m_requiredAddresses.insert(des);
             Ptr<Packet> pkt = Create<Packet>(RReqSize);
             Ptr<MacDcfFrame> msg = CreateObject<MacDcfFrame>();
@@ -436,7 +428,6 @@ CognitiveRoutingUnite::ReceiveRouteReply(Ptr<MacDcfFrame> frame)
             m_timers[des] = Simulator::Schedule(m_ExpiracyTime*5,&CognitiveRoutingUnite::DeleteNode,this,des);
         }
     }
-    std::cout << m_address << ' ' << " I have received a route reply " << Simulator::Now() << '\n';
     SendPendingPackets();
     for(auto& [i,j] : m_pendingReq)
     {
@@ -512,18 +503,41 @@ CognitiveRoutingUnite::SendPendingPackets()
         }
     }
     *m_vector = vect ;
-    std::cout << m_address << " this is my routing table " << '\n'; 
-    for(auto& i : m_routingTable)
-    {
-        std::cout << i .first << ' ' << i.second << '\n';
-    }
 }
 
 double
 
 CognitiveRoutingUnite::CalculateLinkDelay()
 {
-    return 0.0;
+    NS_ASSERT_MSG(!m_numberOfNeighborsCallback.IsNull(),"you have to set the callback to get the number of neighboring nodes");
+    
+    /** calculating the queue delay */
+    double numberOfNeighbors = m_numberOfNeighborsCallback();
+    double dataRate = 6000000 ;
+    double packetSize = 1500*8;
+    double queueDelay = packetSize*numberOfNeighbors/dataRate;
+    
+    /** calculating the backoff delay */
+    double backoffDelay = 0;
+    double taw = 0.01;
+    double collisionProbability = 1 - pow((1-taw),numberOfNeighbors-1);
+    for(uint16_t i = 5 ; i <= 10 ;i++)
+    {
+        double contentionWindowSize = (1<<i);
+        double reachingProbability = pow(collisionProbability,i-5);
+        if(i!=10)
+        {
+            reachingProbability*=(1-collisionProbability);
+        }
+        backoffDelay+=reachingProbability*(contentionWindowSize-1)/2*0.000009;
+    }
+    
+    /** caculating the switching delay */
+    double switchingDelay = 0.006;
+
+    /** final answer */
+    return switchingDelay+backoffDelay+queueDelay;
+    
 }
 
 void 

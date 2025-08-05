@@ -20,6 +20,7 @@ namespace ns3
 typedef Callback<void,Ptr<MacDcfFrame>> SendFrameCallback;
 typedef Callback<void,Ptr<Packet>> SendPacketCallback;
 typedef Callback<bool,Address> IsClusterMemberCallback;
+typedef Callback<uint16_t> NumberOfNeighbors;
     class CognitiveRoutingUnite : public Object
     {
         public:
@@ -140,6 +141,14 @@ typedef Callback<bool,Address> IsClusterMemberCallback;
             void SetIsClusterMemberCallback(IsClusterMemberCallback c);
 
             /**
+             * @brief set the callback
+             * to check the number of
+             * neighboring nodes
+             * @param c the callback
+             */
+            void SetNumberOfNeighboringNodesCallback(NumberOfNeighbors c);
+
+            /**
              * @brief start the route
              * discovery process
              * @param address the wanted
@@ -253,6 +262,7 @@ typedef Callback<bool,Address> IsClusterMemberCallback;
             SendFrameCallback m_ctrlFrameCallback;  //!< sending packet via the control device
             SendPacketCallback m_ctrlAppSendPacketCallback; //!< sending the packet to contorl app
             IsClusterMemberCallback m_IsClusterMemberCallback;  //!< used to know if the node is CM
+            NumberOfNeighbors m_numberOfNeighborsCallback;    //!< the number of neighboring nodes
 
             std::map<Address,Address> m_routingTable;       //!< the routing table and the total delay
             std::map<Address,EventId> m_timers;             //!< the timers for the validity of addresses 

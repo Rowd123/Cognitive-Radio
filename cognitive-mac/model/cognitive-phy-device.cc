@@ -352,7 +352,6 @@
  CognitivePhyDevice::AbortTx()
  {
     NS_ASSERT(m_state==TX);
-    //std::cout << m_netDevice->GetNode()->GetId() << " aborting Tx " << std::endl;
     if(!m_phyMacTxAbortCallback.IsNull())
     {
         m_phyMacTxAbortCallback(m_txPacket);
@@ -372,7 +371,6 @@
      NS_LOG_LOGIC(this << " state: " << m_state);
      NS_LOG_LOGIC(this << " rx power: " << 10 * std::log10(Integral(*(spectrumParams->psd))) + 30
                        << " dBm");
-     // interference will happen regardless of the state of the receiver
      Ptr<SpectrumValue> temp = Create<SpectrumValue>(m_localModel);
     
      m_interference.AddSignal(spectrumParams->psd, spectrumParams->duration);
@@ -386,18 +384,11 @@
      {
         return;
      }
-    // std::cout << CarrierSense(1000) << std::endl;
 
-     
-    // std::cout << CarrierSense(1000) << std::endl;
-
-     // the device might start RX only if the signal is of a type understood by this device
-     // this corresponds in real devices to preamble detection
      Ptr<HalfDuplexIdealPhySignalParameters> rxParams =
          DynamicCast<HalfDuplexIdealPhySignalParameters>(spectrumParams);
      if (rxParams)
      {
-         // signal is of known type
          if(m_state==TX)
          {
             AbortTx();
@@ -515,7 +506,6 @@
  CognitivePhyDevice::CarrierSense(uint16_t Index)
  {
     if(Index==1000){Index = m_channelIndex;}
-  //  std::cout << Index << std::endl;
     Ptr<const SpectrumValue> spec = m_interference.GetSpectrum();
     Ptr<SpectrumValue> model = Create<SpectrumValue>(m_localModel);
     for(uint16_t i = 0 ; i < m_numBins ; i++)

@@ -190,6 +190,9 @@ CognitiveNetDeviceHelper::Install(NodeContainer c) const
         routingUnite->SetSendCtrlFrameCallback(MakeCallback(&CognitiveGeneralNetDevice::SendFrame,controldev));
         routingUnite->SetCtrlAppSendPacketCallback(
             MakeCallback(&CognitiveControlApplication::ReceiveControlMsg,ctrlApp));
+        routingUnite->SetNumberOfNeighboringNodesCallback(
+            MakeCallback(&CognitiveControlApplication::GetNumberOfNeighbors,ctrlApp));
+
 
         datadev->SetDeviceKind(true);
 

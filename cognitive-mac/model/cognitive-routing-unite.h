@@ -241,6 +241,11 @@ typedef Callback<uint16_t> NumberOfNeighbors;
              * @param b target of the request
              */
             void DeleteRequest(Address a ,Address b);
+
+            /**
+             * @brief Get the info
+             */
+            void GetInfos(std::string s);
             
             Address m_CHaddress;        //!< the cluster head address
             Address m_address;          //!< the node address

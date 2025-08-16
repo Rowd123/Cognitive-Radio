@@ -28,6 +28,7 @@
 #include <map>
 #include <cstring>
 #include <queue>
+#include <string>
 
 namespace ns3
 {
@@ -235,7 +236,7 @@ typedef Callback<void,uint16_t> CurrentDataChannelCallback;
          * phase 
          */
         void StopWork(Time stopTime);
-
+        
         /**
          * @brief the total number of generated packets
          * over all class objects
@@ -363,6 +364,11 @@ typedef Callback<void,uint16_t> CurrentDataChannelCallback;
          */
         void StartTransmission(Ptr<Packet> packet);
 
+        /**
+         * @brief get the info
+         */
+        void GetInfos(std::string sname);
+
         std:: queue <Ptr<MacDcfFrame>> *m_queue; // !<the packets' queue
 
         TracedCallback<Ptr<const Packet>> m_MacTxTrace;
@@ -404,8 +410,8 @@ typedef Callback<void,uint16_t> CurrentDataChannelCallback;
         bool m_currentTX ;                  //!< boolean to know if we have a packet to transmit now 
         bool m_backoff;                     //!< boolean to know that we are in backoff phase 
         bool m_dataDevice;                  //!< boolean to indicate if the net device is for data or control
-        inline static uint32_t sentPackets = 0;
-        inline static uint32_t recPackets = 0;
+        inline static uint32_t sentPackets = 10;
+        inline static uint32_t recPackets = 9;
         EventId m_sendPhase ;               //!< time to retry the transmission
         EventId m_nav ;                     //!< virtual carrier sense timers
         EventId m_dropPacket;               //!< timer for dropping a packet

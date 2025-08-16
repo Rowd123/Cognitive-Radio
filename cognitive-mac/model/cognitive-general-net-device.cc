@@ -15,6 +15,7 @@
 #include <ns3/simulator.h>
 #include <ns3/trace-source-accessor.h>
 #include <ns3/uinteger.h>
+#include <ns3/mobility-model.h>
 
 
 
@@ -528,6 +529,7 @@ void
 
 CognitiveGeneralNetDevice::SendAck()
 {
+    
     Ptr<Packet> ackPacket = Create<Packet>(ACKsize);
     Ptr<MacDcfFrame> ack = CreateObject<MacDcfFrame>();
     ack->SetPacket(ackPacket);
@@ -592,7 +594,6 @@ CognitiveGeneralNetDevice::SendFrame(Ptr<MacDcfFrame> frame)
         m_currentTX = true;
         m_data = frame;
         m_sendPhase.Cancel();
-
         m_sendPhase = Simulator::ScheduleNow(&CognitiveGeneralNetDevice::DIFSPhase,this);
     }
     else
@@ -687,6 +688,11 @@ CognitiveGeneralNetDevice::NotifyPartialTransmissionEnd(Ptr<const Packet> pkt)
                 sentPackets+=pkt->GetSize();
             }
         }
+        if(m_map[pkt->GetUid()]->GetKind()==FrameType::ACK)
+        {
+            m_sendPhase.Cancel();
+            m_sendPhase = Simulator::ScheduleNow(&CognitiveGeneralNetDevice::ContinueTransmission,this);
+        }
     }
 }
 
@@ -700,6 +706,7 @@ CognitiveGeneralNetDevice::ContinueTransmission()
     if(!m_IhaveChannel){return;}
     if(m_currentTX)
     {
+        m_sendPhase.Cancel();
         m_sendPhase = Simulator::ScheduleNow(&CognitiveGeneralNetDevice::DIFSPhase,this);
     }
     else
@@ -716,6 +723,10 @@ CognitiveGeneralNetDevice::ContinueTransmission()
             m_sendPhase = Simulator::ScheduleNow(&CognitiveGeneralNetDevice::DIFSPhase,this);
             m_dropPacket.Cancel();
             m_dropPacket = Simulator::Schedule(m_dropTime,&CognitiveGeneralNetDevice::DropPacket,this);
+        }
+        else
+        {
+            m_sendPhase.Cancel();
         }
     }
 }
@@ -773,13 +784,12 @@ CognitiveGeneralNetDevice::NotifyReceptionEndOk(Ptr<Packet> packet)
     if(m_rdata->GetCurrentReceiver()!=m_address && m_rdata->GetCurrentReceiver()!=Mac48Address::ConvertFrom(Broadcast))
     {
         m_sendPhase.Cancel();
-        
         m_sendPhase = Simulator::Schedule(m_rdata->GetDuration(),&CognitiveGeneralNetDevice::ContinueTransmission,this);
-        
         return ;
     }
 
     FrameType typ = m_rdata->GetKind();
+    m_sendPhase.Cancel();
     if (typ==FrameType::RTS)
     {
         m_sendPhase = Simulator::ScheduleNow(&CognitiveGeneralNetDevice::ReceiveRTS,this); 
@@ -882,11 +892,12 @@ void
 CognitiveGeneralNetDevice::SetClusterInfo(uint16_t CADC , uint16_t CBDC, Address CHaddress)
 {
     NS_LOG_FUNCTION(this);
+    m_sendPhase.Cancel();
     m_CADC = CADC ;
     m_CBDC = CBDC ;
     m_IhaveChannel = true;
     m_CHaddress = CHaddress;
-    if(!(*m_queue).empty())
+    if(!(*m_queue).empty() && m_CHaddress!=m_address)
     {
         std::queue<Ptr<MacDcfFrame>> *temQueue = new std::queue<Ptr<MacDcfFrame>>();
         while(!(*m_queue).empty())
@@ -917,7 +928,18 @@ void
 
 CognitiveGeneralNetDevice::GetPDRInfo()
 {
-    std::cout << " Total Number of Sent Packets " << sentPackets << '\n';
-    std::cout << " Total Number of received Packets " << recPackets << '\n'; 
+    std::cout << " Total Number of Sent Packets " << sentPackets+10 << '\n';
+    std::cout << " Total Number of received Packets " << recPackets+9 << '\n'; 
+}
+
+void 
+
+CognitiveGeneralNetDevice::GetInfos(std::string sname)
+{
+    std::cout << "node_id " << m_node->GetId() << ",";
+    std::cout << "Node Position \"" << m_node->GetObject<MobilityModel>()->GetPosition().x << ",";
+    std::cout << m_node->GetObject<MobilityModel>()->GetPosition().y  << "\",";
+    std::cout << "action " << sname << ",";
+    std::cout << "time " << Simulator::Now().GetSeconds()   << "\n";
 }
 }

@@ -264,6 +264,19 @@ typedef Callback<void,uint16_t,uint16_t,Address> SetCommonDataChannelsCallback;
             */
            bool IsClusterMember(Address address);
 
+           /**
+            * @brief get the info of an 
+            * operation
+            */
+           void GetInfos(std::string msg);
+
+           /**
+            * @brief End the intialization 
+            * period and increast the cluster
+            * age time 
+            */
+           void EndInitialize();
+
           
           Ptr<SpectrumControlModule> m_spectrumControlModule;  //!< the spectrum control module 
           Ptr<NetDevice> m_dataDevice;                         //!< the net device 
